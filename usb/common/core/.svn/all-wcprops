@@ -1,0 +1,155 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core
+END
+USBEndpointDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBEndpointDescriptor.h
+END
+USBGenericRequest.c
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBGenericRequest.c
+END
+USBGetDescriptorRequest.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBGetDescriptorRequest.c
+END
+USBIrqHandler.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBIrqHandler.c
+END
+USBGenericRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBGenericRequest.h
+END
+USBGetDescriptorRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBGetDescriptorRequest.h
+END
+USBSetConfigurationRequest.c
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBSetConfigurationRequest.c
+END
+USBIrqHandler.h
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBIrqHandler.h
+END
+USBInterfaceAssociationDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBInterfaceAssociationDescriptor.h
+END
+USBSetConfigurationRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBSetConfigurationRequest.h
+END
+USBDeviceDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBDeviceDescriptor.h
+END
+USBFeatureRequest.c
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBFeatureRequest.c
+END
+USBInterfaceDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBInterfaceDescriptor.h
+END
+USBDeviceQualifierDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBDeviceQualifierDescriptor.h
+END
+USBConfigurationDescriptor.c
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBConfigurationDescriptor.c
+END
+USBFeatureRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBFeatureRequest.h
+END
+USBInterfaceRequest.c
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBInterfaceRequest.c
+END
+USBSetAddressRequest.c
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBSetAddressRequest.c
+END
+USBStringDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBStringDescriptor.h
+END
+USBGenericDescriptor.c
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBGenericDescriptor.c
+END
+USBConfigurationDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBConfigurationDescriptor.h
+END
+USBInterfaceRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBInterfaceRequest.h
+END
+USBEndpointDescriptor.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBEndpointDescriptor.c
+END
+USBSetAddressRequest.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBSetAddressRequest.h
+END
+USBGenericDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/core/USBGenericDescriptor.h
+END

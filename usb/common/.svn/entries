@@ -1,0 +1,22 @@
+8
+
+dir
+201
+https://ersky9x.googlecode.com/svn/trunk/src/bootloader/usb/common
+https://ersky9x.googlecode.com/svn
+
+
+
+2014-01-25T17:35:21.857372Z
+199
+michael.blandford@mypostoffice.co.uk
+
+
+svn:special svn:externals svn:needs-lock
+
+core
+dir
+
+massstorage
+dir
+

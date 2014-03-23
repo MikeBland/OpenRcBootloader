@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core
+END
+USBDDriver.h
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBDDriver.h
+END
+USBDDriverCallbacks.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBDDriverCallbacks.h
+END
+USBDDriverDescriptors.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBDDriverDescriptors.h
+END
+USBD.h
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBD.h
+END
+USBDCallbacks.h
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBDCallbacks.h
+END
+USBD_UDP.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBD_UDP.c
+END
+USBDDriver.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBDDriver.c
+END
+USBDCallbacks.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/core/USBDCallbacks.c
+END

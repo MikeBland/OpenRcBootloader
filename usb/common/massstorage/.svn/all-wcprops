@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/massstorage
+END
+MSDeviceDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/massstorage/MSDeviceDescriptor.h
+END
+MSInterfaceDescriptor.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/!svn/ver/199/trunk/src/bootloader/usb/common/massstorage/MSInterfaceDescriptor.h
+END

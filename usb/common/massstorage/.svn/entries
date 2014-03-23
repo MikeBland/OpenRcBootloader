@@ -1,0 +1,40 @@
+8
+
+dir
+201
+https://ersky9x.googlecode.com/svn/trunk/src/bootloader/usb/common/massstorage
+https://ersky9x.googlecode.com/svn
+
+
+
+2014-01-25T17:35:21.857372Z
+199
+michael.blandford@mypostoffice.co.uk
+
+
+svn:special svn:externals svn:needs-lock
+
+MSDeviceDescriptor.h
+file
+
+
+
+
+2012-10-02T08:56:28.102869Z
+24b76580f5c0d48364386e0f87f2e47a
+2014-01-25T17:35:21.857372Z
+199
+michael.blandford@mypostoffice.co.uk
+
+MSInterfaceDescriptor.h
+file
+
+
+
+
+2012-10-02T08:56:28.112869Z
+d9a3dc090b2e72c6214f7a6baeaba8de
+2014-01-25T17:35:21.857372Z
+199
+michael.blandford@mypostoffice.co.uk
+

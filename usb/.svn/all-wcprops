@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/199/trunk/src/bootloader/usb
+END
+usbd_msc_scsi.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/202/trunk/src/bootloader/usb/usbd_msc_scsi.c
+END
+usb_core.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usb_core.c
+END
+usb_dcd.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usb_dcd.c
+END
+usbd_msc_bot.c
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usbd_msc_bot.c
+END
+usbd_req.c
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usbd_req.c
+END
+usbd_core.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usbd_core.c
+END
+usbd_msc_core.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usbd_msc_core.c
+END
+usbd_msc_data.c
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usbd_msc_data.c
+END
+usbd_desc.c
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usbd_desc.c
+END
+usbd_ioreq.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usbd_ioreq.c
+END
+usb_bsp.c
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usb_bsp.c
+END
+usb_dcd_int.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/199/trunk/src/bootloader/usb/usb_dcd_int.c
+END

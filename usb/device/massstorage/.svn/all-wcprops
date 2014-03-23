@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/massstorage
+END
+MSDDriver.c
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/massstorage/MSDDriver.c
+END
+SBCMethods.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/massstorage/SBCMethods.h
+END
+MSDDriverDescriptors.c
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/!svn/ver/202/trunk/src/bootloader/usb/device/massstorage/MSDDriverDescriptors.c
+END
+MSDDStateMachine.h
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/massstorage/MSDDStateMachine.h
+END
+MSDLun.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/202/trunk/src/bootloader/usb/device/massstorage/MSDLun.c
+END
+MSDIOFifo.h
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/massstorage/MSDIOFifo.h
+END
+MSDDriverDescriptors.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/!svn/ver/199/trunk/src/bootloader/usb/device/massstorage/MSDDriverDescriptors.h
+END
+SBCMethods.c
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/!svn/ver/202/trunk/src/bootloader/usb/device/massstorage/SBCMethods.c
+END
+MSDDStateMachine.c
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/!svn/ver/202/trunk/src/bootloader/usb/device/massstorage/MSDDStateMachine.c
+END
