@@ -892,13 +892,6 @@ extern uint8_t OptrexDisplay ;
 //	lcd_outhex4( 25, FH, ReadCounter ) ;
 //	lcd_outhex4( 50, FH, statuses ) ;
 //	lcd_outhex4( 75, FH, WriteCounter ) ;
-	if ( SDcardDisabled )
-	{
-		if ( BlinkCounter & 512 )
-		{
-			lcd_puts_Pleft( FH, "SD Card OFF" ) ;
-		}
-	}
 
 #endif
 #ifdef PCBX9D
@@ -910,6 +903,14 @@ extern uint8_t OptrexDisplay ;
 //	lcd_outhex4( 0, FH, StartStopCounter ) ;
 //	lcd_outhex4( 25, FH, ReadCounter ) ;
 #endif
+	
+			if ( SDcardDisabled )
+			{
+				if ( BlinkCounter & 512 )
+				{
+					lcd_puts_Pleft( FH, "SD Card OFF" ) ;
+				}
+			}
 
 			if ( sd_card_ready() )
 			{

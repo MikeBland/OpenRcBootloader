@@ -151,7 +151,7 @@ void per10ms()
 	register uint32_t i ;
 
   uint8_t enuk = KEY_MENU;
-  uint8_t    in = ~read_keys() ;
+  uint8_t    in = ~read_keys() & 0x7E ;
 	// Bits 3-6 are down, up, right and left
 	// Try to only allow one at a 
 #ifdef REVX
