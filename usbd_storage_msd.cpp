@@ -741,7 +741,7 @@ int32_t fat12Read( uint8_t *buffer, uint16_t sector, uint16_t count )
 		{
       eeprom_read_block (buffer, (sector-3)*BLOCKSIZE, BLOCKSIZE);
     }
-		else if ( sector < 1155 )
+		else if ( sector < 1091 )
 		{
 			uint32_t address ;
 			address = sector - 67 ;
@@ -813,7 +813,7 @@ int32_t fat12Write(const uint8_t *buffer, uint16_t sector, uint32_t count )
   		  }
   		}
  		}
- 		else if ( sector < 1155 )
+ 		else if ( sector < 1091 )
  		{
  			// firmware
 			uint32_t address ;
@@ -828,7 +828,7 @@ int32_t fat12Write(const uint8_t *buffer, uint16_t sector, uint32_t count )
 				{
 					if ( address >= 0x08008000 )		// Protect bootloader
 					{
-						if ( address < (0x08000000 + (512*1024) - 256) )		// in range
+						if ( address <= (0x08000000 + (512*1024) - 256) )		// in range
 						{
 							program( (uint32_t *)address, (uint32_t *) buffer ) ;	// size is 256 bytes
 						}
