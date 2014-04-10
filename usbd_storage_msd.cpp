@@ -52,6 +52,8 @@ extern "C" {
 #define STORAGE_LUN_NBR    2
 #define BLOCKSIZE          512
 
+uint32_t EepromBlocked = 1 ;
+
 /* USB Mass storage Standard Inquiry Data */
 const unsigned char STORAGE_Inquirydata[] = {//36
   
@@ -794,10 +796,22 @@ int32_t fat12Write(const uint8_t *buffer, uint16_t sector, uint32_t count )
 		{ 
   		while (count)
 			{
-  		  if (offset == 0 && sector == 3 &&/*test->version==EEFS_VERS && */ isValidEepromStart( buffer ) )
+  		  if (offset == 0 && sector == 3 )
 				{
-//      TRACE("EEPROM start found in sector %d", sector);
-  		    offset = sector;
+					if ( isValidEepromStart( buffer ) )
+					{
+	//      TRACE("EEPROM start found in sector %d", sector);
+  			    offset = sector;
+						EepromBlocked = 0 ;
+					}
+					else
+					{
+						EepromBlocked = 1 ;
+					}
+				}
+				if ( EepromBlocked )
+				{
+					return 1 ;
   		  }
   		  if (offset && sector >= offset && (sector-offset) < EESIZE/BLOCKSIZE)
 				{

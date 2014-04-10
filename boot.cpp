@@ -1174,7 +1174,7 @@ extern uint8_t OptrexDisplay ;
 #ifdef PCBX9D
 			if ( --TenCount == 0 )
 			{
-				TenCount = 2 ;
+				TenCount = 4 ;
 #endif			
 			refreshDisplay() ;
 #ifdef PCBX9D
