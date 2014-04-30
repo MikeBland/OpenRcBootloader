@@ -629,7 +629,7 @@ typedef struct {
 //------------------------------------------------------------------------------
 typedef struct {
 
-    unsigned char bModeDataLength;          //!< Length of mode data to follow
+    unsigned char bOperationCode; //!< 0x1B : SBC_START_STOP
     unsigned char bImmediate:1,             //!< 
     							bReserved1:7;             //!< Reserved bits
     unsigned char pReserved[2];						  //!< Reserved bytes

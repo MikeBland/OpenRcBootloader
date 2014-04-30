@@ -27,10 +27,18 @@ BINX = $(CP) -O binary
 
 # Object files directory
 ifeq ($(PCB), TARANIS)
- OBJDIR = tobj
+ ifeq ($(REVPLUS), 1)
+  OBJDIR = tpobj
+ else
+  OBJDIR = tobj
+ endif
 else
 ifeq ($(PCB), X9D)
- OBJDIR = xobj
+ ifeq ($(REVPLUS), 1)
+  OBJDIR = xpobj
+ else
+  OBJDIR = xobj
+ endif
 else
  ifeq ($(REVX), 1)
   OBJDIR = robj
@@ -110,7 +118,11 @@ else
   TRGT = arm-none-eabi-
   CPPDEFS += -DHSE_VALUE=12000000
   CPPDEFS += -DPCBX9D 
-  FULL_PRJ = $(PROJECT)_ramBootS
+  ifeq ($(REVPLUS), 1)
+   FULL_PRJ = $(PROJECT)_ramBootSp
+  else
+   FULL_PRJ = $(PROJECT)_ramBootS
+  endif
   EXTRAINCDIRS += include
 #  EXTRAINCDIRS += ../x9d
  else
@@ -121,14 +133,20 @@ else
   CPPDEFS += -DHSE_VALUE=12000000
   CPPDEFS += -DPCBX9D 
   CPPDEFS += -DPCBTARANIS 
-  FULL_PRJ = $(PROJECT)_ramBootT
+  ifeq ($(REVPLUS), 1)
+   FULL_PRJ = $(PROJECT)_ramBootTp
+  else
+   FULL_PRJ = $(PROJECT)_ramBootT
+  endif
   EXTRAINCDIRS += include
 #  EXTRAINCDIRS += ../targets/taranis/STM32F2xx_StdPeriph_Lib_V1.1.0/Libraries/CMSIS/Device/ST/STM32F2xx/Include
  endif
  endif
 endif
 
-
+ifeq ($(REVPLUS), 1)
+  CPPDEFS += -DREVPLUS
+endif
 
 # List all user C define here, like -D_DEBUG=1
 
@@ -381,6 +399,8 @@ clean:
 	-rm -f xobj/*.*
 	-rm -f robj/*.*
 	-rm -f tobj/*.*
+	-rm -f tpobj/*.*
+	-rm -f xpobj/*.*
 	-rm -f *.elf
 	-rm -f *.map
 	-rm -f *.hex

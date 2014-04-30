@@ -456,7 +456,11 @@ uint32_t read_keys()
 
 uint32_t readTrainerSwitch( void )
 {
+#ifdef REVPLUS
+	if ( GPIOD->IDR & PIN_SW_H )
+#else
 	if ( GPIOE->IDR & PIN_SW_H )
+#endif
 	{
 		return 0 ;
 	}
@@ -468,10 +472,20 @@ void setup_switches()
 {
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ; 		// Enable portB clock
+#ifdef REVPLUS
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portE clock
+#endif
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
 	configure_pins( 0x0020, PIN_INPUT | PIN_PULLUP | PIN_PORTA ) ;
+#ifdef REVPLUS
 	configure_pins( 0x003A, PIN_INPUT | PIN_PULLUP | PIN_PORTB ) ;
+#else
+	configure_pins( 0x0038, PIN_INPUT | PIN_PULLUP | PIN_PORTB ) ;
+#endif
 	configure_pins( 0xE307, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+#ifdef REVPLUS
+	configure_pins( PIN_SW_H, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+#endif
 	
 }
 

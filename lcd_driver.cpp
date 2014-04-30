@@ -23,7 +23,7 @@
 
 #define	WriteData(x)	 AspiData(x)
 #define	WriteCommand(x)	 AspiCmd(x)
-#define CONTRAST_OFS 5
+#define CONTRAST_OFS 12
 
 #define __no_operation     __NOP
 
@@ -45,14 +45,24 @@ void refreshDisplay()
 	{
     uint8_t *p = &DisplayBuf[(y>>3)*DISPLAY_W];
     uint8_t mask = (1 << (y%8));
+		
+#ifdef REVPLUS
+		GPIO_TypeDef *gpiod = GPIOC ;
+#else
 		GPIO_TypeDef *gpiod = GPIOD ;
-    Set_Address(0, y);
+#endif
+    
+		Set_Address(0, y);
     AspiCmd(0xAF);
     
 		gpiod->BSRRL = PIN_LCD_CLK ;		// Clock high
 		gpiod->BSRRL = PIN_LCD_A0 ;			// A0 high
+#ifdef REVPLUS
+    GPIOA->BSRRH = PIN_LCD_NCS ;		// CS low
+#else
     gpiod->BSRRH = PIN_LCD_NCS ;		// CS low
-    
+#endif
+
 		for (uint32_t x=0; x<DISPLAY_W; x+=2)
 		{
       uint32_t data ;
@@ -156,13 +166,112 @@ void refreshDisplay()
 				gpiod->BSRRL = PIN_LCD_CLK ;		// Clock high
 
 		}
-    gpiod->BSRRL = PIN_LCD_NCS ;
+#ifdef REVPLUS
+    GPIOA->BSRRL = PIN_LCD_NCS ;		// CS high
+#else
+    gpiod->BSRRL = PIN_LCD_NCS ;		// CS high
+#endif
 		gpiod->BSRRL = PIN_LCD_A0 ;
     WriteData(0);
   }
 }
 
 uint16_t BacklightBrightness ;
+
+#ifdef REVPLUS
+
+void backlight_w_on()
+{
+	TIM4->CCR2 = 100 - BacklightBrightness ;
+}
+
+void backlight_w_off()
+{
+	TIM4->CCR2 = 0 ;
+}
+
+void backlight_on()
+{
+	TIM4->CCR4 = 100 - BacklightBrightness ;
+}
+
+void backlight_off()
+{
+	TIM4->CCR4 = 0 ;
+}
+
+void backlight_set( uint16_t brightness )
+{
+	BacklightBrightness = brightness ;
+	TIM4->CCR2 = 100 - BacklightBrightness ;
+	TIM4->CCR4 = 100 - BacklightBrightness ;
+}
+
+/**Init the Backlight GPIO */
+static void LCD_BL_Config()
+{
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOBL, ENABLE);
+  
+	GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_InitStructure.GPIO_Pin =GPIO_Pin_BL;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+  GPIO_Init(GPIOBL, &GPIO_InitStructure);
+
+  GPIO_PinAFConfig(GPIOBL, GPIO_PinSource_BL ,GPIO_AF_TIM4);
+
+  GPIO_InitStructure.GPIO_Pin =GPIO_Pin_BLW;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+  GPIO_Init(GPIOBLW, &GPIO_InitStructure);
+
+  GPIO_PinAFConfig(GPIOBLW, GPIO_PinSource_BLW ,GPIO_AF_TIM4);
+
+  RCC->APB1ENR |= RCC_APB1ENR_TIM4EN ;    // Enable clock
+	TIM4->ARR = 100 ;
+	TIM4->PSC = (Peri2_frequency*Timer_mult2) / 10000 - 1 ;		// 100uS from 30MHz
+	TIM4->CCMR1 = TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_2 ;	// PWM
+	TIM4->CCMR2 = TIM_CCMR2_OC4M_1 | TIM_CCMR2_OC4M_2 ;	// PWM
+	TIM4->CCER = TIM_CCER_CC4E | TIM_CCER_CC2E ;
+	
+	BacklightBrightness = 40 ;
+	TIM4->CCR2 = BacklightBrightness ;
+	TIM4->CCR4 = BacklightBrightness ;
+	TIM4->EGR = 0 ;
+	TIM4->CR1 = TIM_CR1_CEN ;				// Counter enable
+}
+
+/**Init the Backlight GPIO */
+void Haptic_Config()
+{
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOHAPTIC, ENABLE);
+  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_InitStructure.GPIO_Pin =GPIO_Pin_HAPTIC;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+  GPIO_Init(GPIOHAPTIC, &GPIO_InitStructure);
+
+  GPIO_PinAFConfig(GPIOHAPTIC, GPIO_PinSource_HAPTIC ,GPIO_AF_TIM10);
+
+	RCC->APB2ENR |= RCC_APB2ENR_TIM10EN ;		// Enable clock
+	TIM10->ARR = 100 ;
+	TIM10->PSC = (Peri2_frequency*Timer_mult2) / 10000 - 1 ;		// 100uS from 30MHz
+	TIM10->CCMR1 = 0x60 ;	// PWM
+	TIM10->CCER = 1 ;	
+	
+	BacklightBrightness = 80 ;
+	TIM10->CCR1 = BacklightBrightness ;
+	TIM10->EGR = 0 ;
+	TIM10->CR1 = 1 ;
+}
+
+#else
 
 void backlight_on()
 {
@@ -206,13 +315,17 @@ static void LCD_BL_Config()
 	TIM10->EGR = 0 ;
 	TIM10->CR1 = 1 ;
 }
+#endif
 
 /** Init the anolog spi gpio
 */
 static void LCD_Hardware_Init()
 {
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_LCD, ENABLE);
-  
+#ifdef REVPLUS
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_LCD_RST, ENABLE);
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_LCD_NCS, ENABLE);
+#endif  
   GPIO_InitTypeDef GPIO_InitStructure;
   
   /*!< Configure lcd CLK\ MOSI\ A0pin in output pushpull mode *************/
@@ -224,13 +337,27 @@ static void LCD_Hardware_Init()
   GPIO_Init(GPIO_LCD, &GPIO_InitStructure);
   
   /*!< Configure lcd NCS pin in output pushpull mode ,PULLUP *************/
-  GPIO_InitStructure.GPIO_Pin = PIN_LCD_NCS | PIN_LCD_RST ;
+#ifdef REVPLUS
+	GPIO_InitStructure.GPIO_Pin = PIN_LCD_NCS ;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+  
+  GPIO_Init(GPIO_LCD_NCS, &GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = PIN_LCD_RST ;
+  GPIO_Init(GPIO_LCD_RST, &GPIO_InitStructure);
+
+#else  
+	GPIO_InitStructure.GPIO_Pin = PIN_LCD_NCS | PIN_LCD_RST ;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
   
   GPIO_Init(GPIO_LCD, &GPIO_InitStructure);
+#endif  
 }
 
 static void LCD_Init()
@@ -286,7 +413,7 @@ static void Delay(volatile unsigned int ms)
 void lcd_init()
 {
 	GPIO_TypeDef *gpiod = GPIOD ;
-	
+
   LCD_BL_Config();
   LCD_Hardware_Init();
   
