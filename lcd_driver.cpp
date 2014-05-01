@@ -233,7 +233,7 @@ static void LCD_BL_Config()
 
   RCC->APB1ENR |= RCC_APB1ENR_TIM4EN ;    // Enable clock
 	TIM4->ARR = 100 ;
-	TIM4->PSC = (Peri2_frequency*Timer_mult2) / 10000 - 1 ;		// 100uS from 30MHz
+	TIM4->PSC = (Peri1_frequency*Timer_mult2) / 10000 - 1 ;		// 100uS from 30MHz
 	TIM4->CCMR1 = TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_2 ;	// PWM
 	TIM4->CCMR2 = TIM_CCMR2_OC4M_1 | TIM_CCMR2_OC4M_2 ;	// PWM
 	TIM4->CCER = TIM_CCER_CC4E | TIM_CCER_CC2E ;

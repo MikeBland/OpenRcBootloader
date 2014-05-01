@@ -312,7 +312,7 @@
 #define SOCKET_WP_CONNECTED             (0)
 #define SOCKET_CP_CONNECTED             (0)
 
-#define SPI_BaudRatePrescaler_SPI_SD    SPI_BaudRatePrescaler_4 // - for SPI1 and full-speed APB2: 60MHz/4 =15MHZ < 20MHZ
+#define SPI_BaudRatePrescaler_SPI_SD    SPI_BaudRatePrescaler_2 // - for SPI1 and half-speed APB2: 30MHz/4 =15MHZ < 20MHZ
 
 // Selectable
 // DMA
