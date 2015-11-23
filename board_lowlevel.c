@@ -217,6 +217,8 @@ extern void dispUSB( void ) ;
 extern uint32_t initReadTrims( void ) ;
 extern void run_application( void ) ;
 
+uint32_t Breason = 0 ;
+
 static void lowLevelUsbCheck( void )
 {
   PMC->PMC_PCER0 = (1<<ID_PIOC)	;	// Enable clock to PIOC
@@ -232,6 +234,12 @@ static void lowLevelUsbCheck( void )
 	{
 		if ( PIOC->PIO_PDSR & 0x02000000 )
 		{
+			initReadTrims() ;
+			Breason = 1 ;
+			if ( ( PIOC->PIO_PDSR & 0x00000100 ) == 0 )	// if ( !readTrainerSwitch() )
+			{
+				return ;
+			}
   		PMC->PMC_PCDR0 = (1<<ID_PIOC)	;	// Disable clock to PIOC
 			dispUSB() ;
 			sam_bootx() ;
@@ -244,6 +252,8 @@ static void lowLevelUsbCheck( void )
 		run_application() ;
 //		loadAndRunBoot() ;
 	}
+	Breason = 2 ;
+
 }
 #endif
 

@@ -41,7 +41,7 @@
 #ifdef PCBSKY
 #include "board.h"
 #endif
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 #include "stm32f2xx.h"
 #endif
 
@@ -83,7 +83,7 @@ extern "C" {
 #endif
 DRESULT disk_read (BYTE, BYTE*, DWORD, BYTE);
 DRESULT disk_write (BYTE, const BYTE*, DWORD, BYTE);
-DRESULT disk_ioctl (BYTE, BYTE, BYTE*);
+DRESULT disk_ioctl (BYTE, BYTE, void*);
 #ifdef __cplusplus
 }
 #endif
@@ -164,7 +164,7 @@ extern uint32_t sd_acmd6( void ) ;
 extern uint32_t sd_acmd51( uint32_t *presult ) ;
 extern uint32_t sd_cmd13( uint32_t *status) ;
 extern void sd_poll_10mS( void ) ;
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 extern void sdPoll10ms( void ) ;
 extern void sdInit( void ) ;
 #endif

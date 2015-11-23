@@ -65,7 +65,9 @@
 #define	PIN_SW_H			        GPIO_Pin_13	//PE.13
 #endif
 #endif
+
 // ADC
+#ifndef PCB9XT
 #define PIN_STK_J1                      GPIO_Pin_0  //PA.00              
 #define PIN_STK_J2                      GPIO_Pin_1  //PA.01
 #define PIN_STK_J3                      GPIO_Pin_2  //PA.02
@@ -80,14 +82,17 @@
 #else
 #define RCC_AHB1Periph_GPIOADC          RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOC
 #endif
+#endif // nPCB9XT
 
 // DAC
 #define PIN_AUDIO_DAC                   GPIO_Pin_4  //PA.04
 
 // Power_OFF Delay and LED
+#ifndef PCB9XT
 #define PIN_PWR_LED                     GPIO_Pin_6  //PC.06
 #define PIN_PWR_STATUS                  GPIO_Pin_1  //PD.01
 #define PIN_MCU_PWR                     GPIO_Pin_0  //PD.00
+
 #define RCC_AHB1Periph_GPIOPWR          RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD
 #ifdef REVPLUS
 #define GPIOPWRINT                      GPIOC
@@ -102,6 +107,7 @@
 #define PIN_INT_RF_PWR                  GPIO_Pin_15	// PD15
 #endif
 #define PIN_EXT_RF_PWR                  GPIO_Pin_8
+#endif // nPCB9XT
 
 // Smart-Port
 #define PIN_SPORT_ON                    GPIO_Pin_4  //PD.04
@@ -241,7 +247,7 @@
 // SD---spi2
 #define SPI_SD                          SPI2
 #define GPIO_AF_SD                      GPIO_AF_SPI2
-#define RCC_AHB1Periph_GPIO_CS          RCC_AHB1Periph_GPIOB
+#define RCC_AHB1Periph_GPIO_SD          RCC_AHB1Periph_GPIOB
 #define GPIO_SPI_SD                     GPIOB
 #define GPIO_Pin_SPI_SD_CS              GPIO_Pin_12 //PB.12
 #define GPIO_Pin_SPI_SD_SCK             GPIO_Pin_13 //PB.13
@@ -258,8 +264,14 @@
 #define GPIO_Mode_WP                    GPIO_Mode_OUT//lock?
 #define GPIO_Mode_CP                    GPIO_Mode_IN //
 #define GPIO_Pin_WP                     GPIO_Pin_8  //PD.08
+#ifndef PCB9XT
 #define GPIO_Pin_CP                     GPIO_Pin_9  //PD.09
 #define GPIO_CTL_SD                     GPIOD
+#else
+#define GPIO_Pin_CP                     GPIO_Pin_11  //PC.11
+#define GPIO_CTL_SD                     GPIOC
+#endif
+#define RCC_AHB1Periph_DMA_SD						RCC_AHB1Periph_DMA1
 
 // Audio----I2S3-----SPI3
 #define CODEC_MCLK_DISABLED
@@ -312,13 +324,48 @@
 #define SOCKET_WP_CONNECTED             (0)
 #define SOCKET_CP_CONNECTED             (0)
 
-#define SPI_BaudRatePrescaler_SPI_SD    SPI_BaudRatePrescaler_4 // - for SPI1 and half-speed APB2: 30MHz/4 =15MHZ < 20MHZ
+#define SPI_BaudRatePrescaler_SPI_SD    SPI_BaudRatePrescaler_2 // - for SPI1 and half-speed APB2: 30MHz/4 =15MHZ < 20MHZ
 
 // Selectable
 // DMA
-#define DMA_Channel_SPI_SD_RX           DMA1_Channel2
-#define DMA_Channel_SPI_SD_TX           DMA1_Channel3
-#define DMA_FLAG_SPI_SD_TC_RX           DMA1_FLAG_TC2
-#define DMA_FLAG_SPI_SD_TC_TX           DMA1_FLAG_TC3
+#define DMA_Channel_SPI_SD_RX    	DMA1_Stream3
+#define DMA_Channel_SPI_SD_TX    	DMA1_Stream4
+#define DMA_FLAG_SPI_SD_TC_RX    	DMA_FLAG_TCIF3
+#define DMA_FLAG_SPI_SD_TC_TX    	DMA_FLAG_TCIF4
+#define DMA_Channel_SPI2_TX		DMA_Channel_0
+#define DMA_Channel_SPI2_RX		DMA_Channel_0
+
+
+#ifdef PCB9XT
+#define PIN_STK_J1                      GPIO_Pin_0  //PC.00              
+#define PIN_STK_J2                      GPIO_Pin_1  //PC.01
+#define PIN_STK_J3                      GPIO_Pin_2  //PC.02
+#define PIN_STK_J4                      GPIO_Pin_3  //PC.03
+#define PIN_MVOLT                       GPIO_Pin_0  //PB.00
+#define PIN_SW1		                      GPIO_Pin_6  //PA.06
+#define PIN_SW2		                      GPIO_Pin_1  //PB.01
+#define PIN_SW3		                      GPIO_Pin_4  //PC.04
+  
+#define RCC_AHB1Periph_GPIOADC          RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC
+
+#define PIN_AUDIO_DAC1                  GPIO_Pin_5  //PA.05
+
+#define RCC_AHB1Periph_GPIOPWR          RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD
+#define GPIOPWR		                      GPIOC
+#define PIN_PWR_STATUS                  GPIO_Pin_6  //PC.06
+#define PIN_MCU_PWR                     GPIO_Pin_5  //PC.05
+
+#define GPIOPWRINT                      GPIOC
+#define GPIOPWREXT                      GPIOD
+#define PIN_INT_RF_PWR                  GPIO_Pin_12	// PC12
+#define PIN_EXT_RF_PWR                  GPIO_Pin_2  // PD2
+
+// EEPROM---spi1
+#define GPIO_Pin_SPI_EE_CS							GPIO_Pin_15	// PA.15
+#define GPIO_Pin_SPI_EE_SCK							GPIO_Pin_3	// PB.03
+#define GPIO_Pin_SPI_EE_MOSI						GPIO_Pin_5	// PB.05
+#define GPIO_Pin_SPI_EE_MISO						GPIO_Pin_4	// PB.04
+#endif // PCB9XT
+
 
 #endif

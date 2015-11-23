@@ -510,7 +510,7 @@ static int8_t SCSI_Read10(uint8_t lun , uint8_t *params)
     }
     
     MSC_BOT_State = BOT_DATA_IN;
-    SCSI_blk_addr *= SCSI_blk_size;
+//    SCSI_blk_addr *= SCSI_blk_size;
     SCSI_blk_len  *= SCSI_blk_size;
     
     /* cases 4,5 : Hi <> Dn */
@@ -582,7 +582,7 @@ static int8_t SCSI_Write10 (uint8_t lun , uint8_t *params)
       return -1; /* error */      
     }
     
-    SCSI_blk_addr *= SCSI_blk_size;
+//    SCSI_blk_addr *= SCSI_blk_size;
     SCSI_blk_len  *= SCSI_blk_size;
     
     /* cases 3,11,13 : Hn,Ho <> D0 */
@@ -671,7 +671,8 @@ static int8_t SCSI_ProcessRead (uint8_t lun)
   
   if( USBD_STORAGE_fops->Read(lun ,
                               MSC_BOT_Data, 
-                              SCSI_blk_addr / SCSI_blk_size, 
+//                              SCSI_blk_addr / SCSI_blk_size, 
+                              SCSI_blk_addr, 
                               len / SCSI_blk_size) < 0)
   {
     
@@ -686,7 +687,8 @@ static int8_t SCSI_ProcessRead (uint8_t lun)
              len);
   
   
-  SCSI_blk_addr   += len; 
+//  SCSI_blk_addr   += len; 
+  SCSI_blk_addr   += len / SCSI_blk_size ; 
   SCSI_blk_len    -= len;  
   
   /* case 6 : Hi = Di */
@@ -714,15 +716,16 @@ static int8_t SCSI_ProcessWrite (uint8_t lun)
   
   if(USBD_STORAGE_fops->Write(lun ,
                               MSC_BOT_Data, 
-                              SCSI_blk_addr / SCSI_blk_size, 
+//                              SCSI_blk_addr / SCSI_blk_size, 
+                              SCSI_blk_addr, 
                               len / SCSI_blk_size) < 0)
   {
     SCSI_SenseCode(lun, HARDWARE_ERROR, WRITE_FAULT);     
     return -1; 
   }
   
-  
-  SCSI_blk_addr  += len; 
+//  SCSI_blk_addr   += len; 
+  SCSI_blk_addr   += len / SCSI_blk_size ; 
   SCSI_blk_len   -= len; 
   
   /* case 12 : Ho = Do */

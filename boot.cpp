@@ -75,6 +75,25 @@ extern "C" {
 
 #endif
 
+#ifdef PCB9XT
+#include "stm32f2xx.h"
+#include "stm32f2xx_flash.h"
+#include "hal.h"
+#include "timers.h"
+#include "mega64.h"
+
+extern "C" {
+#include "usb_dcd_int.h"
+#include "usb_bsp.h"
+#include "usbd_desc.h"
+#include "usbd_msc_core.h"
+#include "usbd_usr.h"
+}
+
+#endif
+
+
+
 #include "radio.h"
 #include "lcd.h"
 #include "ff.h"
@@ -85,7 +104,7 @@ extern "C" {
 __attribute__ ((section(".version"), used))
 const uint8_t Version[] =
 {
-	'B', 'O', 'O', 'T', '1', '1'
+	'B', 'O', 'O', 'T', '1', '7'
 } ;
 
 __attribute__ ((section(".text"), used))
@@ -99,7 +118,9 @@ extern uint16_t usbLunStat() ;
 extern void usbMassStorage( void ) ;
 #endif
 
-#ifdef PCBSKY
+void createFat( uint32_t flashSize ) ;
+
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 #define BOOT_KEY_UP			KEY_UP
 #define BOOT_KEY_DOWN		KEY_DOWN
 #define BOOT_KEY_LEFT		KEY_LEFT
@@ -169,7 +190,7 @@ uint32_t LockBits ;
 uint32_t Block_buffer[1024] ;
 UINT BlockCount ;
 
-#ifdef PCBSKY
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 extern int32_t EblockAddress ;
 #endif
 extern uint32_t EepromBlocked ;
@@ -227,18 +248,24 @@ void delayNus( uint16_t time )
 }
 #endif
 
+static uint32_t PowerUpDelay ;
+
 static bool usbPlugged(void)
 {
+	if ( PowerUpDelay < 100 )	// 1000 mS
+	{
+		return 0 ;
+	}
 #ifdef PCBSKY
 	return PIOC->PIO_PDSR & 0x02000000 ;
 #endif
 	
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 	return GPIOA->IDR & 0x0200 ;
 #endif
 }
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 
 extern "C" {
 USB_OTG_CORE_HANDLE USB_OTG_dev;
@@ -425,7 +452,7 @@ extern "C" void TC2_IRQHandler()
 }
 #endif
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 void init10msTimer()
 {
 	// Timer14
@@ -762,17 +789,64 @@ uint8_t flashFile( uint32_t index )
 
 extern Key keys[] ;
 
-static uint32_t PowerUpDelay ;
 
 uint16_t statuses ;
 
 uint16_t WriteCounter ;
+extern uint32_t Breason ;
+
+//#ifdef PCB9XT
+//void console9xtInit()
+//{
+//	// Serial configure  
+//	RCC->APB1ENR |= RCC_APB1ENR_UART4EN ;		// Enable clock
+//	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
+//	configure_pins( 0x00000001, PIN_PERIPHERAL | PIN_PUSHPULL | PIN_OS25 | PIN_PORTA | PIN_PER_8 ) ;
+//	configure_pins( 0x00000002, PIN_PERIPHERAL | PIN_PORTA | PIN_PER_8 | PIN_PULLUP ) ;
+//	GPIOA->MODER = (GPIOA->MODER & 0xFFFFFFF0 ) | 0x0000000A ;	// Alternate func.
+//	GPIOA->AFR[0] = (GPIOA->AFR[0] & 0xFFFFFF00 ) | 0x00000088 ;	// Alternate func.
+//	UART4->BRR = Peri1_frequency / 115200 ;		// 97.625 divider => 19200 baud
+////	UART4->CR1 = USART_CR1_UE | USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE ;
+//	UART4->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE ;
+//	UART4->CR2 = 0 ;
+//	UART4->CR3 = 0 ;
+////	NVIC_SetPriority( UART4_IRQn, 4 ) ; // Lower priority interrupt
+////  NVIC_EnableIRQ(UART4_IRQn) ;
+//}
+
+////extern "C" void UART4_IRQHandler()
+////{
+////	if ( ( g_model.com2Function == COM2_FUNC_SBUSTRAIN ) || ( g_model.com2Function == COM2_FUNC_SBUS57600 ) )
+////	{
+////		put_fifo64( &Sbus_fifo, UART4->DR ) ;	
+////	}
+////	else
+////	{
+////		put_fifo64( &Console_fifo, UART4->DR ) ;	
+////	}	 
+////}
+
+//void txmit( uint8_t c )
+//{
+//	/* Wait for the transmitter to be ready */
+//  while ( (UART4->SR & USART_SR_TXE) == 0 ) ;
+
+//  /* Send character */
+//	UART4->DR = c ;
+//}
+
+//#endif
 
 int main()
 {
 	uint32_t i ;
   uint8_t index = 0 ;
-#ifdef PCBX9D
+
+//#ifdef PCB9XT
+//	console9xtInit() ;
+//#endif
+
+#if ( defined(PCBX9D) || defined(PCB9XT) )
   uint8_t TenCount = 2 ;
 #endif			
   uint8_t maxhsize = DISPLAY_CHAR_WIDTH ;
@@ -781,7 +855,7 @@ int main()
 	uint32_t nameCount = 0 ;
 	uint32_t vpos = 0 ;
 	uint32_t hpos = 0 ;
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 	uint32_t firmwareAddress = 0x08000000 ;
 #endif			
 #ifdef PCBSKY
@@ -789,15 +863,29 @@ int main()
 #endif			
 	uint32_t firmwareWritten = 0 ;
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 	wdt_reset() ;
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
 #endif
 
 	init_soft_power() ;
 
+#ifdef PCB9XT
+	initM64() ;
+#endif
+
 #ifdef PCBSKY
 	MATRIX->CCFG_SYSIO |= 0x000000F0L ;		// Disable syspins, enable B4,5,6,7
+#endif
+
+#ifdef PCBSKY
+ #ifdef REVX
+	createFat( 512 ) ;
+ #else
+	createFat( 256 ) ;
+ #endif
+#else
+	createFat( 512 ) ;
 #endif
 
 #ifdef PCBSKY
@@ -807,6 +895,7 @@ int main()
 #endif
 
 	lcd_init() ;
+
 #ifdef PCBSKY
 extern uint8_t OptrexDisplay ;
 	OptrexDisplay = 1 ;
@@ -828,10 +917,21 @@ extern uint8_t OptrexDisplay ;
 	init_hw_timer()	;
 #endif
 
+#ifdef PCB9XT
+//	init_keys() ;
+//	setup_switches() ;
+	init_hw_timer()	;
+#endif
+
 	__enable_irq() ;
+
+#ifdef PCB9XT
+	BlSetColour( 50, 2 ) ;	
+#endif
+
 	init10msTimer() ;
 
-#ifdef PCBSKY
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 	EblockAddress = -1 ;
 	init_spi() ;
 #endif
@@ -842,7 +942,7 @@ extern uint8_t OptrexDisplay ;
 	FlashSize = ( (chip_id >> 8 ) & 0x000F ) == 9 ? 256 : 512 ; 
 #endif
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 	FlashSize = 512 ;
 #endif
 
@@ -854,9 +954,13 @@ extern uint8_t OptrexDisplay ;
 	}
 #endif
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 	// SD card detect pin
+#ifdef PCB9XT
+	configure_pins( GPIO_Pin_CP, PIN_PORTC | PIN_INPUT | PIN_PULLUP ) ;
+#else
 	configure_pins( GPIO_Pin_CP, PIN_PORTD | PIN_INPUT | PIN_PULLUP ) ;
+#endif
 	disk_initialize( 0 ) ;
 	sdInit() ;
 	unlockFlash() ;
@@ -868,10 +972,18 @@ extern uint8_t OptrexDisplay ;
 	for(;;)
 	{
 #ifdef PCBSKY
-    usbMassStorage() ;
+ 		if ( PowerUpDelay > 100 )	// 1000 mS
+		{
+    	usbMassStorage() ;
+		}
 #endif
 		
 		wdt_reset() ;
+
+#ifdef PCB9XT
+	checkM64() ;
+#endif
+
 
 		if ( Tenms )
 		{
@@ -881,7 +993,7 @@ extern uint8_t OptrexDisplay ;
 			{
 				if ( --EE_timer  == 0)
 				{
-#ifdef PCBSKY
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 					writeBlock() ;
 #endif
 				}
@@ -889,10 +1001,11 @@ extern uint8_t OptrexDisplay ;
 
 			Tenms = 0 ;
 			lcd_clear() ;
-#ifdef PCBSKY
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 			lcd_puts_Pleft( 0, "Boot Loader V ." ) ;
 			lcd_putc( 13*FW, 0, Version[4] ) ;
 			lcd_putc( 15*FW-2, 0, Version[5] ) ;
+
 //extern uint8_t StartStopCounter ;
 //extern uint16_t ReadCounter ;
 //	lcd_outhex4( 0, FH, StartStopCounter ) ;
@@ -911,7 +1024,7 @@ extern uint8_t OptrexDisplay ;
 //	lcd_outhex4( 25, FH, ReadCounter ) ;
 			
 #endif
-	
+	 
 			if ( SDcardDisabled )
 			{
 				if ( BlinkCounter & 512 )
@@ -922,7 +1035,8 @@ extern uint8_t OptrexDisplay ;
 
 			if ( sd_card_ready() )
 			{
-#ifdef PCBSKY
+
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 				lcd_puts_P( 16*FW-1, 0, "Ready" ) ;
 #endif
 #ifdef PCBX9D
@@ -944,7 +1058,7 @@ extern uint8_t OptrexDisplay ;
 				
 				if ( state == ST_USB )
 				{
-#ifdef PCBSKY
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 					lcd_puts_Pleft( 3*FH, "\004Connecting.." ) ;
 #endif
 #ifdef PCBX9D
@@ -961,7 +1075,7 @@ extern uint8_t OptrexDisplay ;
 					lcd_putc( 6, 7*FH, '0' + EepromBlocked ) ;
 #endif
 				}
-
+				
 				if ( state == ST_START )
 				{
   				fr = f_mount(0, &g_FATFS) ;
@@ -989,11 +1103,11 @@ extern uint8_t OptrexDisplay ;
 				}
 				if ( state == ST_DIR_CHECK )
 				{
-#ifdef PCBSKY
-					lcd_puts_Pleft( 16, "\005No Firmware" ) ;
+#if ( defined(PCBSKY) || defined(PCB9XT) )
+					lcd_puts_Pleft( 16, "\002No Firmware Files" ) ;
 #endif
 #ifdef PCBX9D
-					lcd_puts_Pleft( 16, "\013No Firmware" ) ;
+					lcd_puts_Pleft( 16, "\010No Firmware Files" ) ;
 #endif
 				}
 				if ( state == ST_OPEN_DIR )
@@ -1043,6 +1157,11 @@ extern uint8_t OptrexDisplay ;
 					}
 					{
 						uint8_t event = getEvent() ;
+//	lcd_outhex4( 100, FH, event ) ;
+						if ( event == EVT_KEY_REPT( KEY_TRN ) )
+						{
+							killEvents( event ) ;
+						}
 						if ( event == EVT_KEY_FIRST( KEY_TRN ) )
 						{
 							SDcardDisabled = SDcardDisabled ? 0 : 1;
@@ -1118,7 +1237,7 @@ extern uint8_t OptrexDisplay ;
 #ifdef PCBSKY
 						firmwareAddress = 0x00408000 ;
 #endif
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 						firmwareAddress = 0x08008000 ;
 #endif
 						firmwareWritten = 0 ;
@@ -1179,25 +1298,30 @@ extern uint8_t OptrexDisplay ;
 				}
 			}
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 			if ( --TenCount == 0 )
 			{
 				TenCount = 4 ;
 #endif			
 			refreshDisplay() ;
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 			}
 #endif			
-			if ( PowerUpDelay < 20 )	// 200 mS
+			if ( PowerUpDelay < 200 )	// 2000 mS
 			{
 				PowerUpDelay += 1 ;
 			}
-			else
+			if ( PowerUpDelay >= 20 )	// 200 mS
+//			if ( PowerUpDelay < 20 )	// 200 mS
+//			{
+//				PowerUpDelay += 1 ;
+//			}
+//			else
 			{
 #ifdef PCBSKY
 				sd_poll_10mS() ;
 #endif			
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 				sdPoll10ms() ;
 #endif			
 			}

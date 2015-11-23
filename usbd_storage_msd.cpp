@@ -27,18 +27,32 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "radio.h"
+#ifndef PCB9XT
 #include "eeprom_rlc.h"
+#endif
 #include <stdint.h>
 #include <string.h>
 //#include <stdlib.h>
 #include "drivers.h"
+#ifndef PCB9XT
 #include "i2c_ee.h"
+#endif
+
+#ifdef PCB9XT
+#include "stm32f2xx_gpio.h"
+#include "hal.h"
+#define EESIZE    (512*1024)
+#endif
 
 #include "diskio.h"
 //#include "board_taranis.h"
 
 void I2C_EE_BufferWrite(uint8_t* pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite) ;
 void eeprom_read_block (void *pointer_ram, uint16_t pointer_eeprom, size_t size);
+
+#ifdef PCB9XT
+#include "file.h"
+#endif
 
 extern "C" {
 #include "misc.h"
@@ -54,6 +68,7 @@ extern "C" {
 
 uint32_t EepromBlocked = 1 ;
 
+
 /* USB Mass storage Standard Inquiry Data */
 const unsigned char STORAGE_Inquirydata[] = {//36
   
@@ -66,9 +81,9 @@ const unsigned char STORAGE_Inquirydata[] = {//36
   0x00,
   0x00,	
   0x00,
-  'F', 'r', 'S', 'k', 'y', ' ', ' ', ' ',  /* Manufacturer : 8 bytes */
-  'T', 'a', 'r', 'a', 'n', 'i', 's', ' ',  /* Product      : 16 Bytes */
-  'R', 'a', 'd', 'i', 'o', ' ', ' ', ' ',
+  'S', 'm', 'a', 'r', 't', 'i', 'e', ' ',  /* Manufacturer : 8 bytes */
+  'P', 'a', 'r', 't', 's', ' ', ' ', ' ',  /* Product      : 16 Bytes */
+  '9', 'X', 't', 'r', 'e', 'm', 'e', ' ',
   '1', '.', '0', '0',                      /* Version      : 4 Bytes */
   /* LUN 1 */
   0x00,		
@@ -79,10 +94,10 @@ const unsigned char STORAGE_Inquirydata[] = {//36
   0x00,
   0x00,	
   0x00,
-  'F', 'r', 'S', 'k', 'y', ' ', ' ', ' ',  /* Manufacturer : 8 bytes */
-  'T', 'a', 'r', 'a', 'n', 'i', 's', ' ',  /* Product      : 16 Bytes */
-  'R', 'a', 'd', 'i', 'o', ' ', ' ', ' ',
-  '1', '.', '0' ,'0',                      /* Version      : 4 Bytes */
+  'S', 'm', 'a', 'r', 't', 'i', 'e', ' ',  /* Manufacturer : 8 bytes */
+  'P', 'a', 'r', 't', 's', ' ', ' ', ' ',  /* Product      : 16 Bytes */
+  '9', 'X', 't', 'r', 'e', 'm', 'e', ' ',
+  '1', '.', '0', '0',                      /* Version      : 4 Bytes */
 }; 
 
 int32_t fat12Write( const uint8_t *buffer, uint16_t sector, uint32_t count ) ;
@@ -310,7 +325,7 @@ int8_t STORAGE_GetMaxLun (void)
 /**
  * FAT12 boot sector partition.
  */
-const char g_FATboot[BLOCKSIZE] =
+const char g_FATboot[] =
 {
     0xeb, 0x3c, 0x90, // Jump instruction.
     0x39, 0x58, 0x20, 0x54, 0x45, 0x41, 0x4D, 0x00, // OEM Name
@@ -320,8 +335,12 @@ const char g_FATboot[BLOCKSIZE] =
     
     0x01, // Number of FATs
     0x10, 0x00, // Number of root directory entries
-    (EESIZE/BLOCKSIZE)+3, 0x04, // Total sectors = 1024+131=1155
-    0xf8, // Media descriptor
+#ifdef PCB9XT    
+    0x03, 0x08, // Total sectors = 2051
+#else
+		(EESIZE/BLOCKSIZE)+3, 0x04, // Total sectors = 1024+131=1155
+#endif    
+		0xf8, // Media descriptor
     0x01, 0x00, // Sectors per FAT table
     0x20, 0x00, // Sectors per track
     0x40, 0x00, // Number of heads
@@ -368,6 +387,8 @@ const char g_FATboot[BLOCKSIZE] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0xaa
 };
 
+//char g_FATboot[BLOCKSIZE] ;
+
 #if defined(REV4a)
 const char g_FAT[BLOCKSIZE] =
 {
@@ -405,6 +426,42 @@ const char g_FAT[BLOCKSIZE] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 #else
+#ifdef PCB9XT
+const char g_FAT[BLOCKSIZE] =
+{
+		0xF8, 0xFF, 0xFF, 0x03, 0x40, 0x00, 0x05, 0x60, 0x00, 0x07, 0x80, 0x00, 0x09, 0xA0, 0x00, 0x0B,
+		0xC0, 0x00, 0x0D, 0xE0, 0x00, 0x0F, 0x00, 0x01, 0x11, 0x20, 0x01, 0x13, 0x40, 0x01, 0x15, 0x60,
+		0x01, 0x17, 0x80, 0x01, 0x19, 0xA0, 0x01, 0x1B, 0xC0, 0x01, 0x1D, 0xE0, 0x01, 0x1F, 0x00, 0x02,
+		0x21, 0x20, 0x02, 0x23, 0x40, 0x02, 0x25, 0x60, 0x02, 0x27, 0x80, 0x02, 0x29, 0xA0, 0x02, 0x2B,
+		0xC0, 0x02, 0x2D, 0xE0, 0x02, 0x2F, 0x00, 0x03, 0x31, 0x20, 0x03, 0x33, 0x40, 0x03, 0x35, 0x60,
+		0x03, 0x37, 0x80, 0x03, 0x39, 0xA0, 0x03, 0x3B, 0xC0, 0x03, 0x3D, 0xE0, 0x03, 0x3F, 0x00, 0x04,
+		0x41, 0x20, 0x04, 0x43, 0x40, 0x04, 0x45, 0x60, 0x04, 0x47, 0x80, 0x04, 0x49, 0xA0, 0x04, 0x4B,
+		0xC0, 0x04, 0x4D, 0xE0, 0x04, 0x4F, 0x00, 0x05, 0x51, 0x20, 0x05, 0x53, 0x40, 0x05, 0x55, 0x60,
+		0x05, 0x57, 0x80, 0x05, 0x59, 0xA0, 0x05, 0x5B, 0xC0, 0x05, 0x5D, 0xE0, 0x05, 0x5F, 0x00, 0x06,
+		0x61, 0x20, 0x06, 0x63, 0x40, 0x06, 0x65, 0x60, 0x06, 0x67, 0x80, 0x06, 0x69, 0xA0, 0x06, 0x6B,
+		0xC0, 0x06, 0x6D, 0xE0, 0x06, 0x6F, 0x00, 0x07, 0x71, 0x20, 0x07, 0x73, 0x40, 0x07, 0x75, 0x60,
+		0x07, 0x77, 0x80, 0x07, 0x79, 0xA0, 0x07, 0x7B, 0xC0, 0x07, 0x7D, 0xE0, 0x07, 0x7F, 0x00, 0x08,
+		0x81, 0xF0, 0xFF, 0x83, 0x40, 0x08, 0x85, 0x60, 0x08, 0x87, 0x80, 0x08, 0x89, 0xA0, 0x08, 0x8B,
+		0xC0, 0x08, 0x8D, 0xE0, 0x08, 0x8F, 0x00, 0x09, 0x91, 0x20, 0x09, 0x93, 0x40, 0x09, 0x95, 0x60,
+		0x09, 0x97, 0x80, 0x09, 0x99, 0xA0, 0x09, 0x9B, 0xC0, 0x09, 0x9D, 0xE0, 0x09, 0x9F, 0x00, 0x0A,
+		0xA1, 0x20, 0x0A, 0xA3, 0x40, 0x0A, 0xA5, 0x60, 0x0A, 0xA7, 0x80, 0x0A, 0xA9, 0xA0, 0x0A, 0xAB,
+		0xC0, 0x0A, 0xAD, 0xE0, 0x0A, 0xAF, 0x00, 0x0B, 0xB1, 0x20, 0x0B, 0xB3, 0x40, 0x0B, 0xB5, 0x60,
+		0x0B, 0xB7, 0x80, 0x0B, 0xB9, 0xA0, 0x0B, 0xBB, 0xC0, 0x0B, 0xBD, 0xE0, 0x0B, 0xBF, 0x00, 0x0C,
+		0xC1, 0x20, 0x0C, 0xC3, 0x40, 0x0C, 0xC5, 0x60, 0x0C, 0xC7, 0x80, 0x0C, 0xC9, 0xA0, 0x0C, 0xCB,
+		0xC0, 0x0C, 0xCD, 0xE0, 0x0C, 0xCF, 0x00, 0x0D, 0xD1, 0x20, 0x0D, 0xD3, 0x40, 0x0D, 0xD5, 0x60,
+		0x0D, 0xD7, 0x80, 0x0D, 0xD9, 0xA0, 0x0D, 0xDB, 0xC0, 0x0D, 0xDD, 0xE0, 0x0D, 0xDF, 0x00, 0x0E,
+		0xE1, 0x20, 0x0E, 0xE3, 0x40, 0x0E, 0xE5, 0x60, 0x0E, 0xE7, 0x80, 0x0E, 0xE9, 0xA0, 0x0E, 0xEB,
+		0xC0, 0x0E, 0xED, 0xE0, 0x0E, 0xEF, 0x00, 0x0F, 0xF1, 0x20, 0x0F, 0xF3, 0x40, 0x0F, 0xF5, 0x60,
+		0x0F, 0xF7, 0x80, 0x0F, 0xF9, 0xA0, 0x0F, 0xFB, 0xC0, 0x0F, 0xFD, 0xE0, 0x0F, 0xFF, 0x00, 0x10,
+		0x01, 0xF1, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+#else
 const char g_FAT[BLOCKSIZE] =
 {
     0xF8, 0xFF, 0xFF, 0x03, 0x40, 0x00, 0x05, 0x60, 0x00, 0x07, 0x80, 0x00, 0x09, 0xF0, 0xFF, 0x0B,
@@ -440,6 +497,7 @@ const char g_FAT[BLOCKSIZE] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+#endif // PCB9XT
 #endif
 
 //	File Attributes
@@ -477,8 +535,13 @@ const FATDirEntry_t g_DIRroot[16] =
         { 'T', 'A', 'R', 'A', 'N', 'I', 'S', ' '},
         { ' ', ' ', ' '},
 #else
+#ifdef PCB9XT
+        { '9', 'X', 'T', 'R', 'E', 'M', 'E', ' '},
+        { ' ', ' ', ' '},
+#else
         { 'E', 'R', 'S', 'K', 'Y', '_', '9', 'X'},
         { ' ', ' ', ' '},
+#endif
 #endif
         0x08,		// Volume
         0x00,
@@ -494,7 +557,7 @@ const FATDirEntry_t g_DIRroot[16] =
     },
     {
 #ifdef PCBTARANIS
-        { 'T', 'A', 'R', 'A', 'N', 'I', 'S', ' '},
+        { 'E', 'E', 'P', 'R', 'O', 'M', ' ', ' '},
         { 'B', 'I', 'N'},
 #else
         { 'E', 'R', 'S', 'K', 'Y', '9', 'X', ' '},
@@ -524,7 +587,11 @@ const FATDirEntry_t g_DIRroot[16] =
         0x0000,
         0xA302,
         0x3D55,
+#ifdef PCB9XT
+        0x0082,
+#else
         0x000A,
+#endif
         0x00080000	// 512K
     },
     {
@@ -724,6 +791,488 @@ const FATDirEntry_t g_DIRroot[16] =
     },
 };
 
+//FATDirEntry_t g_DIRroot[16] ;
+//char g_FAT[BLOCKSIZE] ;
+
+void createFat( uint32_t flashSize )
+{
+//	uint32_t i ;
+//	uint32_t j ;
+//	uint32_t k ;
+//	uint32_t m ;
+//	uint32_t n ;
+//	uint32_t p ;
+//	memcpy( g_FATboot, g_rom_FATboot, sizeof(g_rom_FATboot) ) ;
+//	g_FATboot[BLOCKSIZE-2] = 0x55 ;
+//	g_FATboot[BLOCKSIZE-1] = 0xaa ;
+	
+//	memcpy( g_DIRroot, g_rom_DIRroot, sizeof(g_rom_DIRroot) ) ;
+//	for ( i = 4 ; i < 16 ; i += 1 )
+//	{
+//		memcpy( &g_FATboot[i], &g_FATboot[3], sizeof(g_FATboot[3]) ) ;
+//	}
+	
+//	g_FAT[0] = 0xF8 ;
+//	g_FAT[1] = 0xFF ;
+//	g_FAT[2] = 0xFF ;
+
+//	i = 3 ;
+//	j = 0 ;
+//	m = 0 ;
+//#ifdef PCB9XT
+//	p = 3 + 128 - 1 ;
+//	n = p + 128 ;
+//#else
+//	p = 10 ;
+//	n = p + 128 ;
+//#endif
+//	for ( k = 3 ; k <= n ; k += 1 )
+//	{
+//		uint32_t x ;
+//		x = k ;
+//		if ( ( k == p ) || ( k == n ) )
+//		{
+//			x = 0xFFF ;
+//		}
+//		m |= x << j ;
+//		j += 12 ;
+//		while ( j >= 8 )
+//		{
+//			g_FAT[i++] = m ;
+//			m >>= 8 ;
+//			j -= 8 ;
+//		}
+//	}
+}
+
+
+#ifdef PCB9XT
+int32_t fat12Read( uint8_t *buffer, uint16_t sector, uint16_t count )
+{
+  while ( count )
+  {
+		if (sector == 0)
+		{
+		  memcpy( buffer, g_FATboot, BLOCKSIZE ) ;
+		}
+		else if ( sector == 1/*Reserved sector count*/)
+		{
+		  // FAT table.
+		  memcpy( buffer, g_FAT, BLOCKSIZE);
+		}
+		else if ( sector == 2)
+		{
+		  // Directory
+		  memcpy( buffer, g_DIRroot, BLOCKSIZE ) ;
+		}
+		else if ( sector < 1027 )
+		{
+			ee32_read_512( sector-3, buffer ) ;
+		}	
+		else if ( sector < 2051 )
+		{
+			uint32_t address ;
+			address = sector - 1027 ;
+			address *= 512 ;
+			address += 0x08000000 ;
+  		memcpy( buffer, (uint8_t *)address, BLOCKSIZE ) ;
+		}
+		else
+		{
+  	  memset( buffer, 0, BLOCKSIZE ) ;
+		}
+    buffer += BLOCKSIZE ;
+    sector++ ;
+    count-- ;
+	}
+	return 0 ;
+}
+
+uint32_t  eeprom_write_one( uint8_t byte, uint8_t count ) ;
+void writeBlock( void ) ;
+uint32_t eeprom_read_status() ;
+void eeprom_write_enable() ;
+
+extern uint8_t EE_timer ;
+
+uint32_t spi_PDC_action( register uint8_t *command, register uint8_t *tx, register uint8_t *rx, register uint32_t comlen, register uint32_t count ) ;
+uint32_t spi_operation( register uint8_t *tx, register uint8_t *rx, register uint32_t count ) ;
+uint8_t Eblock_buffer[4096] ;
+uint8_t Eblock_current[4096] ;		// For erased checking
+uint8_t Spi_tx_buf[24] ;
+uint8_t Spi_rx_buf[24] ;
+int32_t EblockAddress ;
+
+//uint32_t eeprom_read_status()
+//{
+//	return eeprom_write_one( 5, 1 ) ;
+//}
+
+//void eeprom_write_enable()
+//{
+//	eeprom_write_one( 6, 0 ) ;
+//}
+
+void eeprom_wait_busy()
+{
+	register uint32_t x ;
+	register uint32_t y ;
+	
+	y = 0 ;
+	do
+	{
+		y += 1 ;
+		if ( y > 1000000 )
+		{
+			break ;			
+		}
+		x = eeprom_read_status() ;
+	} while ( x & 1 ) ;
+  
+}
+
+
+uint32_t AT25D_EraseBlock( uint32_t memoryOffset )
+{
+	register uint8_t *p ;
+	register uint32_t x ;
+
+//	EeEraseCount += 1 ;
+	 
+	eeprom_write_enable() ;
+	p = Spi_tx_buf ;
+	*p = 0x20 ;		// Block Erase command
+	*(p+1) = memoryOffset >> 16 ;
+	*(p+2) = memoryOffset >> 8 ;
+	*(p+3) = memoryOffset ;		// 3 bytes address
+	x = spi_operation( p, Spi_rx_buf, 4 ) ;
+#if PCB9XT	
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+#endif
+
+	eeprom_wait_busy() ;
+	return x ;
+}
+
+
+void AT25D_Write( uint8_t *BufferAddr, uint32_t size, uint32_t memoryOffset )
+{
+	register uint8_t *p ;
+	
+	eeprom_write_enable() ;
+	
+	p = Spi_tx_buf ;
+	*p = 2 ;		// Write command
+	*(p+1) = memoryOffset >> 16 ;
+	*(p+2) = memoryOffset >> 8 ;
+	*(p+3) = memoryOffset ;		// 3 bytes address
+		 
+	spi_PDC_action( p, BufferAddr, 0, 4, size ) ;
+
+	eeprom_wait_busy() ;
+
+}
+
+
+uint32_t eeprom_block_erased( register uint8_t *p)
+{
+	register uint32_t x ;
+	register uint32_t result ;
+
+	result = 1 ;
+
+	for ( x = 0 ; x < 4096 ; x += 1 )
+	{
+		if ( *p++ != 0xFF )
+		{
+			result = 0 ;			
+			break ;
+		}		
+	}
+	return result ;
+}
+
+uint32_t eeprom_page_erased( register uint8_t *p)
+{
+	register uint32_t x ;
+	register uint32_t result ;
+
+	result = 1 ;
+
+	for ( x = 0 ; x < 256 ; x += 1 )
+	{
+		if ( *p++ != 0xFF )
+		{
+			result = 0 ;			
+			break ;
+		}		
+	}
+	return result ;
+}
+
+
+void AT25D_Read( uint8_t *BufferAddr, uint32_t size, uint32_t memoryOffset)
+{
+	register uint8_t *p ;
+	
+	p = Spi_tx_buf ;
+	*p = 3 ;		// Read command
+	*(p+1) = memoryOffset >> 16 ;
+	*(p+2) = memoryOffset >> 8 ;
+	*(p+3) = memoryOffset ;		// 3 bytes address
+	
+	spi_PDC_action( p, 0, BufferAddr, 4, size ) ;
+}
+
+void readBlock( uint32_t block_address )
+{
+  AT25D_Read( Eblock_buffer, 4096, block_address ) ;	// read block to write to
+  memcpy( Eblock_current, Eblock_buffer, 4096 ) ;			// Copy for erase checking
+
+	EblockAddress = block_address ;
+}
+			 
+void writeBlock()
+{
+	uint32_t x ;
+	uint32_t address ;
+	uint32_t i ;
+	uint8_t *s ;
+	
+	x = eeprom_block_erased( Eblock_current ) ;		// EEPROM block blanked?
+	if ( x == 0 )
+	{
+		AT25D_EraseBlock( EblockAddress ) ;
+    memset( Eblock_current, 0xFF, 4096 ) ;		// Now erased
+	}
+			
+	s = Eblock_buffer ;
+	address = EblockAddress ;
+	for ( i = 0 ; i < 16 ; i += 1 )		// pages in block
+	{
+		x = eeprom_page_erased( s ) ;
+		if ( x == 0 )				// Not blank
+		{
+//EeWriteCount += 1 ;
+   		AT25D_Write( s, 256, address ) ;
+		}						
+		s += 256 ;
+		address += 256 ;
+	}
+	EblockAddress = -1 ;
+	EE_timer = 0 ;
+}
+
+
+
+uint32_t ee32_read_512( uint32_t sector, uint8_t *buffer )
+{
+	AT25D_Read( buffer, 512, sector * 512 ) ;
+	return 1 ;
+}
+
+// Test for EEPROM file
+uint32_t isEepromStart( uint8_t *p )
+{
+	uint32_t csum ;
+	uint32_t size = 7 ;
+
+	csum = 0 ;
+	while( size )
+	{
+		csum += *p++ ;
+		size -= 1 ;
+	}
+	if ( csum == *p )
+	{
+		return 1 ;
+	}
+	return 0 ;	
+}
+
+uint32_t unprotect_eeprom()
+{
+ 	register uint8_t *p ;
+
+	eeprom_write_enable() ;
+		
+	p = Spi_tx_buf ;
+	*p = 0x39 ;		// Unprotect sector command
+	*(p+1) = 0 ;
+	*(p+2) = 0 ;
+	*(p+3) = 0 ;		// 3 bytes address
+
+#if PCB9XT	
+	uint32_t result ;
+	result = spi_operation( p, Spi_rx_buf, 4 ) ;
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+	return result ;
+#else
+	return spi_operation( p, Spi_rx_buf, 4 ) ;
+#endif
+
+}
+
+
+uint32_t ee32_write( const uint8_t *buffer, uint32_t sector, uint32_t count )
+{
+	// EEPROM write
+	uint32_t startMemoryOffset ;
+	uint32_t memoryOffset ;
+	uint32_t bytesToWrite ;
+  uint8_t *pBuffer ;
+	int32_t block_address ;
+
+	if ( sector == 0 )
+	{
+		if ( isEepromStart( (uint8_t *) buffer ) )
+		{
+			EepromBlocked = 0 ;
+		}
+		else
+		{
+			EepromBlocked = 1 ;
+		}
+	}
+
+	if ( EepromBlocked )
+	{
+		return 1 ;
+	}
+
+	startMemoryOffset = sector ;
+	startMemoryOffset *= 512 ;		// Byte address into EEPROM
+  memoryOffset      = startMemoryOffset;
+
+	bytesToWrite = count * 512 ;
+				
+	unprotect_eeprom() ;
+
+  pBuffer = (uint8_t *) buffer ;
+
+	block_address = memoryOffset &0xFFFFF000 ;		// 4k boundary
+
+	if ( EblockAddress != -1 )
+	{
+		// Ram copy is dirty
+		if ( EblockAddress != block_address )
+		{
+			// flush buffer
+			writeBlock() ;
+		}
+	}
+
+	// Now check for pre-read
+	if ( EblockAddress != block_address )
+	{
+		
+		readBlock( block_address ) ;
+		
+//		// Check to see if it is blank
+//		x = eeprom_block_erased( Eblock_buffer ) ;
+//		if ( x == 0 )
+//		{
+//			AT25D_EraseBlock( block_address ) ;
+//		}
+	}
+
+	while (bytesToWrite)
+	{
+		uint32_t bytes_to_copy ;
+		uint32_t i ;
+		uint8_t *s ;
+		uint8_t *dest ;
+
+		if ( EblockAddress != block_address )
+		{
+			readBlock( block_address ) ;
+		}
+
+		dest = Eblock_buffer + (memoryOffset & 0x0FFF ) ;
+		s = pBuffer ;
+		bytes_to_copy = 4096 - ( memoryOffset - block_address ) ;
+		if ( bytes_to_copy > bytesToWrite )
+		{
+			bytes_to_copy = bytesToWrite ;
+		}
+		for ( i = 0 ; i < bytes_to_copy ; i += 1 )
+		{
+			*dest++ = *s++ ;						
+		}
+		memoryOffset += bytes_to_copy ;
+		bytesToWrite -= bytes_to_copy ;
+		 
+		if ( dest > &Eblock_buffer[4095] )
+		{
+			// copied data past end
+			writeBlock() ;
+		}
+		else
+		{
+			EE_timer = 30 ;		// Write dirty block in 0.3 secs
+		}
+	}
+	return 1 ;
+}
+
+
+uint32_t program( uint32_t *address, uint32_t *buffer )	;		// size is 256 bytes
+uint32_t ee32_write( const uint8_t *buffer, uint32_t sector, uint32_t count ) ;
+
+int32_t fat12Write( const uint8_t *buffer, uint16_t sector, uint32_t count )
+{
+	// TO DO, actually write to the EEPROM
+	if ( sector >= 3 )
+	{
+		if ( sector < 1027 )
+		{
+  		while (count)
+			{
+				ee32_write( buffer, sector-3, count ) ;
+		    buffer += BLOCKSIZE ;
+    		sector++ ;
+		    count-- ;
+			}
+		}	
+		else if ( sector < 2051 )
+		{
+			// FIRMWARE
+			uint32_t address ;
+			address = sector - 1027 ;
+			address *= 512 ;
+			address += 0x08000000 ;
+			// Write to flash
+			uint32_t i ;
+			while ( count )
+			{
+				for ( i = 0 ; i < 2 ; i += 1 )
+				{
+					if ( address >= 0x08008000 )		// Protect bootloader
+					{
+						if ( address <= (0x08000000 + (512*1024) - 256) )		// in range
+						{
+							program( (uint32_t *)address, (uint32_t *) buffer ) ;	// size is 256 bytes
+						}
+					}
+					address += 256 ;
+					buffer += 256 ;
+				}
+				count -= 1 ;
+			}
+		}
+		else
+		{
+			return 1 ;
+		}
+	}
+  return 0 ;
+}
+
+#else // PCB9XT
+
+extern uint32_t program( uint32_t *address, uint32_t *buffer )	;		// size is 256 bytes
+uint32_t isValidEepromStart( const uint8_t *buffer ) ;
+
 // count is number of 512 byte sectors
 int32_t fat12Read( uint8_t *buffer, uint16_t sector, uint16_t count )
 {
@@ -757,32 +1306,6 @@ int32_t fat12Read( uint8_t *buffer, uint16_t sector, uint16_t count )
   }
   return 0 ;
 }
-//------------------------------------------------------------------------------
-
-extern uint32_t program( uint32_t *address, uint32_t *buffer )	;		// size is 256 bytes
-
-uint32_t isValidEepromStart( const uint8_t *buffer )
-{
-	uint32_t size ;
-	uint32_t bs ;
-	// Check Taranis format
-	size = buffer[1] + ( buffer[2] << 8 ) ;
-	bs = buffer[5] ;
-	if ( ( size == 0x0100 ) && ( bs == 0x40 ) )
-	{
-		return 1 ;		
-	}
-	size = buffer[1] ;
-	bs = buffer[3] ;
-	if ( ( size == 0x0080 ) && ( bs == 0x80 ) )
-	{
-		return 1 ;		
-	}
-	return 0 ;
-}
-
-
-//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 int32_t fat12Write(const uint8_t *buffer, uint16_t sector, uint32_t count )
 {
@@ -856,7 +1379,33 @@ int32_t fat12Write(const uint8_t *buffer, uint16_t sector, uint32_t count )
 	}
   return 0 ;
 }
+#endif // PCB9XT
 
+//------------------------------------------------------------------------------
+
+
+uint32_t isValidEepromStart( const uint8_t *buffer )
+{
+	uint32_t size ;
+	uint32_t bs ;
+	// Check Taranis format
+	size = buffer[1] + ( buffer[2] << 8 ) ;
+	bs = buffer[5] ;
+	if ( ( size == 0x0100 ) && ( bs == 0x40 ) )
+	{
+		return 1 ;		
+	}
+	size = buffer[1] ;
+	bs = buffer[3] ;
+	if ( ( size == 0x0080 ) && ( bs == 0x80 ) )
+	{
+		return 1 ;		
+	}
+	return 0 ;
+}
+
+
+//------------------------------------------------------------------------------
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 

@@ -38,7 +38,7 @@
 #endif
 
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 #include "stm32f2xx_gpio.h"
 #include "stm32f2xx_rcc.h"
 #include "hal.h"
@@ -121,6 +121,54 @@ void init_soft_power()
 	
 	GPIO_SetBits(GPIOPWR,PIN_MCU_PWR);
 
+}
+
+#endif
+
+#ifdef PCB9XT
+void soft_power_off()
+{
+	configure_pins( PIN_MCU_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTC ) ;
+  GPIO_ResetBits(GPIOPWR,PIN_MCU_PWR) ;
+}
+
+
+uint32_t check_soft_power()
+{
+	static uint32_t c1 = 0 ;
+//	static uint32_t c2 = 0 ;
+	uint16_t value = GPIOC->IDR ;
+  if ( value & PIN_PWR_STATUS )
+	{
+		c1 = 0 ;
+    return POWER_ON ;
+	}
+  else
+	{
+		c1 += 1 ;
+		if ( c1 > 50 )
+		{
+    	return POWER_OFF;
+		}
+    return POWER_ON ;
+	}
+}
+
+void init_soft_power()
+{
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN ; 		// Enable portC clock
+	
+	GPIO_ResetBits(GPIOPWRINT, PIN_INT_RF_PWR );
+	GPIO_ResetBits(GPIOPWREXT, PIN_EXT_RF_PWR);
+
+  /* GPIO  Configuration*/
+	configure_pins( PIN_INT_RF_PWR | PIN_MCU_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTC ) ;
+	configure_pins( PIN_EXT_RF_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTD ) ;
+
+	configure_pins( PIN_PWR_STATUS, PIN_INPUT | PIN_PORTC ) ;
+	
+	configure_pins( PIN_MCU_PWR, PIN_INPUT | PIN_PULLUP | PIN_PORTC ) ;
 }
 
 #endif

@@ -25,11 +25,15 @@
 #include "drivers.h"
 #endif
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 #include "stm32f2xx.h"
 #include "stm32f2xx_gpio.h"
 #include "radio.h"
 #include "hal.h"
+#endif
+
+#ifdef PCB9XT
+#include "mega64.h"
 #endif
 
 
@@ -118,7 +122,7 @@ void configure_pins( uint32_t pins, uint16_t config )
 #endif
 
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 void configure_pins( uint32_t pins, uint16_t config )
 {
 	uint32_t address ;
@@ -380,7 +384,7 @@ uint32_t initReadTrims( void )
 	init_keys() ;
 	setup_switches() ;
 	uint32_t i ;
-	for ( i = 0 ; i < 5000 ; i += 1 )
+	for ( i = 0 ; i < 10000 ; i += 1 )
 	{
 		__asm("nop") ;
 	}
@@ -490,4 +494,27 @@ void setup_switches()
 }
 
 #endif  // PCBX9D
+
+#ifdef PCB9XT
+uint32_t read_keys()
+{
+	checkM64() ;
+	return ~M64Buttons ;
+}
+
+uint32_t readTrainerSwitch( void )
+{
+	checkM64() ;
+	if ( M64Switches & 0x0100 )
+	{
+		return 1 ;
+	}
+	return 0 ;
+}
+
+
+#endif // PCB9XT
+
+
+
 

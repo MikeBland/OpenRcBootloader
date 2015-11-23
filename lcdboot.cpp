@@ -32,6 +32,11 @@
  #include "radio.h"
 #endif
 
+#ifdef PCB9XT
+ #include "radio.h"
+ #include "mega64.h"
+#endif
+
 #include "lcd.h"
 #include "drivers.h"
 #include "logicio.h"
@@ -619,4 +624,29 @@ void dispUSB()
 }
 
 #endif
+
+#ifdef PCB9XT
+void refreshDisplay()
+{
+	displayToM64() ;	
+}
+
+void lcdSetRefVolt(uint8_t val)
+{
+	M64Contrast = val ;
+	M64SetContrast = 1 ;
+}
+
+void lcd_init()
+{
+}
+
+void backlight_on()
+{
+}
+
+void backlight_off()
+{
+}
+#endif // PCB9XT
 

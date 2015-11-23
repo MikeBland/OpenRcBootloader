@@ -23,7 +23,12 @@
 
 #define	WriteData(x)	 AspiData(x)
 #define	WriteCommand(x)	 AspiCmd(x)
+
+#ifdef REVPLUS
+#define CONTRAST_OFS 120
+#else
 #define CONTRAST_OFS 12
+#endif
 
 #define __no_operation     __NOP
 
@@ -41,7 +46,11 @@ void Set_Address(uint8_t x, uint8_t y)
 
 void refreshDisplay()
 {  
+#ifdef REVPLUS
+  for (uint32_t y=0; y<DISPLAY_H; y += 2)
+#else
   for (uint32_t y=0; y<DISPLAY_H; y++)
+ #endif
 	{
     uint8_t *p = &DisplayBuf[(y>>3)*DISPLAY_W];
     uint8_t mask = (1 << (y%8));
@@ -52,7 +61,11 @@ void refreshDisplay()
 		GPIO_TypeDef *gpiod = GPIOD ;
 #endif
     
+#ifdef REVPLUS
+		Set_Address(0, y/2);
+#else
 		Set_Address(0, y);
+#endif
     AspiCmd(0xAF);
     
 		gpiod->BSRRL = PIN_LCD_CLK ;		// Clock high
@@ -63,10 +76,24 @@ void refreshDisplay()
     gpiod->BSRRH = PIN_LCD_NCS ;		// CS low
 #endif
 
+#ifdef REVPLUS
+		for (uint32_t x=0; x<DISPLAY_W; x += 1 )
+#else
 		for (uint32_t x=0; x<DISPLAY_W; x+=2)
+#endif
 		{
       uint32_t data ;
 			data = 0 ;
+#ifdef REVPLUS
+			if ( p[x] & mask )
+			{
+				data = 0x0F ;
+			}
+			if (p[x] & (mask<<1) )
+			{
+				data += 0xF0 ;
+			}	
+#else
 			if ( p[x] & mask )
 			{
 				data = 0xF0 ;
@@ -75,6 +102,7 @@ void refreshDisplay()
 			{
 				data += 0x0F ;
 			}	
+#endif
 			
         if(data&0x80)
         {
@@ -360,6 +388,43 @@ static void LCD_Hardware_Init()
 #endif  
 }
 
+#ifdef REVPLUS
+static void LCD_Init()
+{
+  LCD_BL_Config() ;
+  /*Hardware Reset need delay*/
+  /*LCD_RST_LOW();
+    Delay(50);    
+    LCD_RST_HIGH();*/
+    
+  AspiCmd(0x25);   //(5) Temperature compensation curve definition: 0x25 = -0.05%/oC
+	AspiCmd(0x2b);   //(6) Panel loading set ,Internal VLCD.
+  AspiCmd(0xEA);	 //(27) set bias=1/10
+  AspiCmd(0x81);	 //(11) Set Vop + next byte
+  AspiCmd(25+CONTRAST_OFS);		//0--255
+  AspiCmd(0xA6);	//inverse display off
+	AspiCmd(0xA1);	//line rates,24 Klps
+  AspiCmd(0x84);	//Disable Partial Display
+  AspiCmd(0xC8);	//SET N-LINE INVERSION
+  AspiCmd(0x00);	//Disable NIV
+  AspiCmd(0xF1);	//Set CEN
+  AspiCmd(0x3F);	// 1/64DUTY
+  AspiCmd(0xC0);	//(21) Set mapping
+  AspiCmd(0x04);	// MY=1, MX=0, MSF=0
+  AspiCmd(0x89);	//(15) WA=1,column (CA) increment (+1) first until CA reaches CA boundary, then RA will increment by (+1).
+  AspiCmd(0xF8);	//Set Window Program Enable  ,inside modle
+  AspiCmd(0xD0);	 //(23) SET 4 bits/pixel, pattern 0
+  AspiCmd(0xF4);   //starting column address of RAM program window.
+  AspiCmd(0x00);
+  AspiCmd(0xF5);   //starting row address of RAM program window.
+  AspiCmd(0x00);
+  AspiCmd(0xF6);   //ending column address of RAM program window.
+  AspiCmd(0xD3);
+  AspiCmd(0xF7);   //ending row address of RAM program window.
+  AspiCmd(0x3F);
+	AspiCmd(0xAF);	// Active and 16-grey scale
+}
+#else
 static void LCD_Init()
 {
   LCD_BL_Config() ;
@@ -398,6 +463,7 @@ static void LCD_Init()
   AspiCmd(0xAF);	//dc2=1,IC into exit SLEEP MODE,	 dc3=1  gray=ON 开灰阶	,dc4=1  Green Enhanc mode disabled	  绿色增强模式关
 	
 }
+#endif
 
 static void Delay(volatile unsigned int ms)
 {

@@ -13,6 +13,15 @@ extern void killEvents(uint8_t event) ;
 extern void init_spi( void ) ;
 extern void end_spi( void ) ;
 
+struct t_fifo64
+{
+	uint8_t fifo[64] ;
+	uint32_t in ;
+	uint32_t out ;
+} ;
+
+extern int32_t get_fifo64( struct t_fifo64 *pfifo ) ;
+
 
 //------------------------------------------------------------------------------
 /// Detect if SD card is connected
@@ -70,5 +79,9 @@ public:
 };
 
 extern Key keys[NUM_KEYS] ;
+
+#ifdef PCB9XT
+void BlSetColour( uint32_t level, uint32_t colour ) ;
+#endif
 
 #endif

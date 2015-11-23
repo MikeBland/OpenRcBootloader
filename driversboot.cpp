@@ -27,14 +27,14 @@
 #endif
 
 
-#ifdef PCBX9D
+#if ( defined(PCBX9D) || defined(PCB9XT) )
 #include "radio.h"
 #include "hal.h"
 #include "stm32f2xx.h"
 #include "stm32f2xx_gpio.h"
 #include "stm32f2xx_rcc.h"
-#endif
 #include "drivers.h"
+#endif
 #include "logicio.h"
 
 #ifdef EVT_KEY_MASK
@@ -43,6 +43,7 @@
 
 #define EVT_KEY_MASK             0x0f
 
+volatile uint32_t Spi_complete ;
 
 void b_putEvent( register uint8_t evt) ;
 void per10ms( void ) ;
@@ -209,4 +210,449 @@ extern uint32_t readTrainerSwitch( void ) ;
   }
 }
 
+#ifdef PCB9XT
+
+int32_t get_fifo64( struct t_fifo64 *pfifo )
+{
+	int32_t rxbyte ;
+	if ( pfifo->in != pfifo->out )				// Look for char available
+	{
+		rxbyte = pfifo->fifo[pfifo->out] ;
+		pfifo->out = ( pfifo->out + 1 ) & 0x3F ;
+		return rxbyte ;
+	}
+	return -1 ;
+}
+
+void eeprom_write_enable() ;
+uint32_t eeprom_write_one( uint8_t byte, uint8_t count ) ;
+uint32_t spi_operation( register uint8_t *tx, register uint8_t *rx, register uint32_t count ) ;
+
+void init_spi()
+{
+	register uint8_t *p ;
+	uint8_t spi_buf[4] ;
+//  SPI_InitTypeDef  SPI_InitStructure;
+//  GPIO_InitTypeDef GPIO_InitStructure;
+
+  /* Enable GPIO clock for CS */
+  RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA, ENABLE);
+  /* Enable GPIO clock for Signals */
+  RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOB, ENABLE);
+  /* Enable SPI clock, SPI1: APB2, SPI2: APB1 */
+  RCC->APB2ENR |= RCC_APB2ENR_SPI1EN ;    // Enable clock
+
+	// APB1 clock / 2 = 133nS per clock
+	SPI1->CR1 = 0 ;		// Clear any mode error
+	SPI1->CR2 = 0 ;
+	SPI1->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_CPOL | SPI_CR1_CPHA ;
+	SPI1->CR1 |= SPI_CR1_MSTR ;	// Make sure in case SSM/SSI needed to be set first
+	SPI1->CR1 |= SPI_CR1_SPE ;
+
+	configure_pins( GPIO_Pin_SPI_EE_CS, PIN_PUSHPULL | PIN_OS25 | PIN_OUTPUT | PIN_PORTA ) ;
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+	configure_pins( GPIO_Pin_SPI_EE_SCK | GPIO_Pin_SPI_EE_MOSI, PIN_PUSHPULL | PIN_OS25 | PIN_PERIPHERAL | PIN_PORTB | PIN_PER_5 ) ;
+	configure_pins( GPIO_Pin_SPI_EE_MISO, PIN_PERIPHERAL | PIN_PORTB | PIN_PULLUP | PIN_PER_5 ) ;
+
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN ;			// Enable DMA2 clock
+
+	NVIC_SetPriority( DMA2_Stream0_IRQn, 1 ) ; // priority interrupt
+  NVIC_EnableIRQ( DMA2_Stream0_IRQn ) ;
+	NVIC_SetPriority( DMA2_Stream3_IRQn, 1 ) ; // priority interrupt
+  NVIC_EnableIRQ( DMA2_Stream3_IRQn ) ;
+        
+	p = spi_buf ;
+  
+	eeprom_write_enable() ;
+	
+	*p = 1 ;		// Write status register command
+	*(p+1) = 0 ;
+	spi_operation( p, spi_buf, 2 ) ;
+	      
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+//#ifdef STM32_SD_USE_DMA
+//  /* enable DMA clock */
+//  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+//#endif
+	
+}
+
+uint32_t spi_operation( register uint8_t *tx, register uint8_t *rx, register uint32_t count )
+{
+	register SPI_TypeDef *spiptr = SPI1 ;
+	register uint32_t result ;
+	
+	GPIOA->BSRRH = GPIO_Pin_SPI_EE_CS ;		// output enable
+	(void) spiptr->DR ;		// Dump any rx data
+	while( count )
+	{
+		result = 0 ;
+		while( ( spiptr->SR & SPI_SR_TXE ) == 0 )
+		{
+			// wait
+			if ( ++result > 10000 )
+			{
+				result = 0xFFFF ;
+				break ;				
+			}
+		}
+		if ( result > 10000 )
+		{
+			break ;
+		}
+//		if ( count == 1 )
+//		{
+//			spiptr->SPI_CR = SPI_CR_LASTXFER ;		// LastXfer bit
+//		}
+		spiptr->DR = *tx++ ;
+		result = 0 ;
+		while( ( spiptr->SR & SPI_SR_RXNE ) == 0 )
+		{
+			// wait for received
+			if ( ++result > 10000 )
+			{
+				result = 0x2FFFF ;
+				break ;				
+			}
+		}
+		if ( result > 10000 )
+		{
+			break ;
+		}
+		*rx++ = spiptr->DR ;
+		count -= 1 ;
+	}
+	if ( result <= 10000 )
+	{
+		result = 0 ;
+	}
+	result = 0 ; 
+	
+	return result ;
+}
+
+void eeprom_write_enable()
+{
+	eeprom_write_one( 6, 0 ) ;
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+}
+
+uint32_t eeprom_read_status()
+{
+	uint32_t result ;
+	
+	result = eeprom_write_one( 5, 1 ) ;
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+	return result ;
+}
+
+uint32_t  eeprom_write_one( uint8_t byte, uint8_t count )
+{
+	register SPI_TypeDef *spiptr = SPI1 ;
+	register uint32_t result ;
+	
+	GPIOA->BSRRH = GPIO_Pin_SPI_EE_CS ;		// output enable
+	(void) spiptr->DR ;		// Dump any rx data
+	
+	spiptr->DR = byte ;
+
+	result = 0 ; 
+	while( ( spiptr->SR & SPI_SR_RXNE ) == 0 )
+	{
+		// wait for received
+		if ( ++result > 10000 )
+		{
+			break ;				
+		}
+	}
+	if ( count == 0 )
+	{
+		return spiptr->DR ;
+	}
+	(void) spiptr->DR ;		// Dump the rx data
+	spiptr->DR = 0 ;
+	result = 0 ; 
+	while( ( spiptr->SR & SPI_SR_RXNE ) == 0 )
+	{
+		// wait for received
+		if ( ++result > 10000 )
+		{
+			break ;				
+		}
+	}
+	return spiptr->DR ;
+}
+
+uint32_t spi_PDC_action( uint8_t *command, uint8_t *tx, uint8_t *rx, uint32_t comlen, uint32_t count )
+{
+	static uint8_t discard_rx_command[4] ;
+
+	Spi_complete = 0 ;
+	if ( comlen > 4 )
+	{
+		Spi_complete = 1 ;
+		return 0x4FFFF ;		
+	}
+	
+	GPIOA->BSRRH = GPIO_Pin_SPI_EE_CS ;		// output enable
+	DMA2_Stream0->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+	DMA2_Stream3->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+
+	spi_operation( command, discard_rx_command, comlen ) ;	// send command
+
+	if ( rx )
+	{
+		DMA2_Stream0->CR = DMA_SxCR_CHSEL_1 | DMA_SxCR_CHSEL_0 | DMA_SxCR_PL_0
+											  | DMA_SxCR_MINC ;
+		DMA2_Stream0->PAR = (uint32_t) &SPI1->DR ;
+		DMA2_Stream0->M0AR = (uint32_t) rx ;
+		DMA2_Stream0->NDTR = count ;
+		DMA2->LIFCR = DMA_LIFCR_CTCIF0 | DMA_LIFCR_CHTIF0 | DMA_LIFCR_CTEIF0 | DMA_LIFCR_CDMEIF0 | DMA_LIFCR_CFEIF0 ; // Write ones to clear bits
+		SPI1->CR2 |= SPI_CR2_RXDMAEN ;
+		DMA2_Stream0->CR |= DMA_SxCR_EN ;		// Enable DMA
+	}
+	if ( tx )
+	{
+		DMA2_Stream3->M0AR = (uint32_t) tx ;
+	}
+	else
+	{
+		DMA2_Stream3->M0AR = (uint32_t) rx ;
+	}
+	DMA2_Stream3->NDTR = count ;
+	DMA2_Stream3->CR = DMA_SxCR_CHSEL_1 | DMA_SxCR_CHSEL_0 | DMA_SxCR_PL_0 
+											  | DMA_SxCR_MINC | DMA_SxCR_DIR_0 ;
+	DMA2_Stream3->PAR = (uint32_t) &SPI1->DR ;
+	DMA2->LIFCR = DMA_LIFCR_CTCIF3 | DMA_LIFCR_CHTIF3 | DMA_LIFCR_CTEIF3 | DMA_LIFCR_CDMEIF3 | DMA_LIFCR_CFEIF3 ; // Write ones to clear bits
+	SPI1->CR2 |= SPI_CR2_TXDMAEN ;
+	DMA2_Stream3->CR |= DMA_SxCR_EN ;		// Enable DMA
+	if ( tx )
+	{
+		DMA2_Stream3->CR |= DMA_SxCR_TCIE ;
+	}
+	else
+	{
+		DMA2_Stream0->CR |= DMA_SxCR_TCIE ;
+	}
+	// Wait for things to get started, avoids early interrupt
+//	for ( count = 0 ; count < 1000 ; count += 1 )
+//	{
+//		if ( ( spiptr->SPI_SR & SPI_SR_TXEMPTY ) == 0 )
+//		{
+//			break ;			
+//		}
+//	}
+	
+// For bootloader, wait for completion	
+	count = 0 ;
+	while( Spi_complete == 0 )
+	{
+		if ( ++count > 100000 )
+		{
+			break ;			
+		}
+	}
+	
+	DMA2_Stream3->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+	DMA2_Stream0->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+	DMA2_Stream0->CR &= ~DMA_SxCR_TCIE ;		// Stop interrupt
+	DMA2_Stream3->CR &= ~DMA_SxCR_TCIE ;		// Stop interrupt
+	SPI1->CR2 &= ~SPI_CR2_TXDMAEN & ~SPI_CR2_RXDMAEN ;
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+	
+	if ( count > 1000000 )
+	{
+		return 1 ;
+	}
+	return 0 ;
+}
+
+extern "C" void DMA2_Stream0_IRQHandler()
+{
+	DMA2_Stream3->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+	DMA2_Stream0->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+	DMA2_Stream0->CR &= ~DMA_SxCR_TCIE ;		// Stop interrupt
+	DMA2_Stream3->CR &= ~DMA_SxCR_TCIE ;		// Stop interrupt
+	SPI1->CR2 &= ~SPI_CR2_TXDMAEN & ~SPI_CR2_RXDMAEN ;
+	Spi_complete = 1 ;
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+}
+
+extern "C" void DMA2_Stream3_IRQHandler()
+{
+	if ( DMA2_Stream3->NDTR )
+	{
+		DMA2->LIFCR = DMA_LIFCR_CTCIF3 | DMA_LIFCR_CFEIF3 ; // Write ones to clear bits
+		DMA2_Stream3->CR |= DMA_SxCR_EN ;		// Enable DMA
+		return ;
+	}
+	// Wait for TXE=1
+	uint32_t i ;
+	i = 0 ;
+	while ( ( SPI1->SR & SPI_SR_TXE ) == 0 )
+	{
+		if ( ++i > 10000 )
+		{
+			break ;		// Software timeout				
+		}
+	}
+	// Then wait for BSY == 0
+	i = 0 ;
+	while ( SPI1->SR & SPI_SR_BSY )
+	{
+		if ( ++i > 10000 )
+		{
+			break ;		// Software timeout				
+		}
+	}
+	DMA2_Stream3->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+	DMA2_Stream3->CR &= ~DMA_SxCR_TCIE ;		// Stop interrupt
+	SPI1->CR2 &= ~SPI_CR2_TXDMAEN & ~SPI_CR2_RXDMAEN ;
+	Spi_complete = 1 ;
+	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
+}
+
+#endif // PCB9XT
+
+// Backlight driver
+// Reset/sync, >50uS low
+// 0 bit  High - 0.5uS   Low - 2.0uS
+// 1 bit  High - 1.2uS   Low - 1.3uS
+// All +/-150nS
+// Timer 4, channel 4, PortB bit 9
+// Also needs Timer 4 channel 1 to cause DMA transfer
+// Timer 4 counts up to 2.5uS then resets, channel 4 outputs signal
+// Channel 1 requests DMA to channel 4 at 2uS
+// At end of DMA, need to work out when to stop timer.
+// Maybe set channel 4 compare to past 2.5uS
+// DMA1, stream 0, channel 2, triggered by TIM4 CH1
+
+// Testing on a X9D plus, on Ext PPM out PA7
+// TIM2, ch2 and TIM2 Ch4 for DMA on CH3, Stream1
+
+#ifdef PCB9XT
+
+uint32_t BlLastLevel ;
+uint16_t BlData[27] ;
+uint8_t BlColours[3] ;
+uint8_t BlChanged ;
+uint8_t BlCount ;
+
+void backlightSend() ;
+
+// The value is 24 bits, 8 red, 8 green, 8 blue right justified
+void backlightSet( uint32_t value )
+{
+	uint16_t *blptr = BlData ;
+	uint32_t i ;
+	value <<= 8 ;
+	for ( i = 0 ; i < 24 ; i += 1 )
+	{
+		*blptr++ = ( value & 0x80000000 ) ? 12 : 5 ;
+		value <<= 1 ;
+	}
+	*blptr++ = 40 ;
+	*blptr++ = 40 ;
+	*blptr = 40 ;
+}
+
+uint16_t BlDebug0 ;
+uint16_t BlDebug1 ;
+uint16_t BlDebug2 ;
+uint16_t BlDebug3 ;
+
+// Level is 0 to 100%
+// colour is 0 red, 1 green, 2 blue
+void BlSetColour( uint32_t level, uint32_t colour )
+{
+	BlDebug0 += 1 ;
+	if ( colour > 3 )
+	{
+		return ;
+	}
+	BlDebug1 += 1 ;
+	level *= 255 ;
+	level /= 100 ;
+	if ( level > 255 )
+	{
+		level = 255 ;
+	}
+	if ( colour == 3 )
+	{
+		BlColours[0] = level ;
+		BlColours[1] = level ;
+		BlColours[2] = level ;
+	}
+	else
+	{
+		BlColours[colour] = level ;
+	}
+	
+	level = (BlColours[0] << 16 ) | (BlColours[1] << 8 ) | (BlColours[2] ) ;
+//	if ( level != BlLastLevel )
+//	{
+		BlLastLevel = level ;
+		backlightSet( level ) ;
+		BlCount = 2 ;
+		BlChanged = 1 ;
+		backlightSend() ;
+//	}
+}
+
+extern uint32_t Peri1_frequency ;
+extern uint32_t Timer_mult1 ;
+
+void backlightSend()
+{
+	BlDebug2 += 1 ;
+	BlChanged = 0 ;
+	
+  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ;           // Enable portB clock
+  configure_pins( GPIO_Pin_9, PIN_PERIPHERAL | PIN_PORTB | PIN_PER_2 | PIN_OS25 | PIN_PUSHPULL ) ;
+	
+	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN ;		// Enable clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN ;		// Enable DMA1 clock
+
+  TIM4->CR1 &= ~TIM_CR1_CEN ;
+	TIM4->PSC = (Peri1_frequency*Timer_mult1) / 10000000 - 1 ;		// 0.1uS
+  TIM4->ARR = 24 ;             // 2.5uS
+  TIM4->CCR1 = 19 ;            // Update time
+	TIM4->CCER = TIM_CCER_CC4E ;
+	TIM4->CNT = 65536-710 ;
+  TIM4->CCR4 = BlData[0] ;		// Past end
+	TIM4->DIER |= TIM_DIER_CC1DE ;          // Enable DMA on CC1 match
+	TIM4->CCMR2 = TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1 ;                     // Force O/P high
+
+  // Enable the DMA channel here, DMA1 stream 0, channel 2
+  DMA1_Stream0->CR &= ~DMA_SxCR_EN ;              // Disable DMA
+  DMA1->LIFCR = DMA_LIFCR_CTCIF0 | DMA_LIFCR_CHTIF0 | DMA_LIFCR_CTEIF0 | DMA_LIFCR_CDMEIF0 | DMA_LIFCR_CFEIF0 ; // Write ones to clear bits
+  DMA1_Stream0->CR = DMA_SxCR_CHSEL_1 | DMA_SxCR_PL_0 | DMA_SxCR_MSIZE_0 
+                 | DMA_SxCR_PSIZE_0 | DMA_SxCR_MINC | DMA_SxCR_DIR_0 ;// | DMA_SxCR_PFCTRL ;
+  DMA1_Stream0->PAR = (uint32_t)(&TIM4->CCR4);
+  DMA1_Stream0->M0AR = (uint32_t)(&BlData[1]);
+	DMA1_Stream0->NDTR = 26 ;
+  DMA1_Stream0->CR |= DMA_SxCR_EN ;               // Enable DMA
+
+  TIM4->SR &= ~TIM_SR_CC1IF ;                             // Clear flag
+  TIM4->CR1 |= TIM_CR1_CEN ;
+	DMA1_Stream0->CR |= DMA_SxCR_TCIE ;
+	NVIC_SetPriority( DMA1_Stream0_IRQn, 5 ) ; // Lower priority interrupt
+  NVIC_EnableIRQ( DMA1_Stream0_IRQn ) ;
+}
+
+extern "C" void DMA1_Stream0_IRQHandler()
+{
+	BlDebug3 += 1 ;
+	if ( --BlCount )
+	{
+		backlightSend() ;
+		return ;
+	}
+	DMA1_Stream0->CR &= ~DMA_SxCR_EN ;		// Disable DMA
+	DMA1_Stream0->CR &= ~DMA_SxCR_TCIE ;		// Stop interrupt
+  TIM4->CR1 &= ~TIM_CR1_CEN ;
+}
+
+
+#endif // PCB9XT
 

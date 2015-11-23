@@ -8,6 +8,9 @@
 #ifdef PCBX9D
 #define wdt_reset()	(IWDG->KR = 0x0000AAAAL)
 #endif
+#ifdef PCB9XT
+#define wdt_reset()	(IWDG->KR = 0x0000AAAAL)
+#endif
 
 #define POWER_OFF			0
 #define POWER_ON			1
@@ -32,7 +35,7 @@
 
 #define NUM_KEYS 7
 
-#ifdef PCBSKY
+#if ( defined(PCBSKY) || defined(PCB9XT) )
 enum EnumKeys {
     KEY_MENU ,
     KEY_EXIT ,

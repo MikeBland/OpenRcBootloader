@@ -46,15 +46,15 @@
   *-----------------------------------------------------------------------------
   *        System Clock source                    | PLL (HSE)
   *-----------------------------------------------------------------------------
-  *        SYSCLK(Hz)                             | 60000000
+  *        SYSCLK(Hz)                             | 120000000
   *-----------------------------------------------------------------------------
-  *        HCLK(Hz)                               | 60000000
+  *        HCLK(Hz)                               | 120000000
   *-----------------------------------------------------------------------------
   *        AHB Prescaler                          | 1
   *-----------------------------------------------------------------------------
-  *        APB1 Prescaler                         | 2
+  *        APB1 Prescaler                         | 4
   *-----------------------------------------------------------------------------
-  *        APB2 Prescaler                         | 1
+  *        APB2 Prescaler                         | 2
   *-----------------------------------------------------------------------------
   *        HSE Frequency(Hz)                      | 12000000
   *-----------------------------------------------------------------------------
@@ -62,7 +62,7 @@
   *-----------------------------------------------------------------------------
   *        PLL_N                                  | 240
   *-----------------------------------------------------------------------------
-  *        PLL_P                                  | 4
+  *        PLL_P                                  | 2
   *-----------------------------------------------------------------------------
   *        PLL_Q                                  | 5
   *-----------------------------------------------------------------------------
@@ -74,7 +74,7 @@
   *-----------------------------------------------------------------------------
   *        VDD(V)                                 | 3.3
   *-----------------------------------------------------------------------------
-  *        Flash Latency(WS)                      | 2
+  *        Flash Latency(WS)                      | 3
   *-----------------------------------------------------------------------------
   *        Prefetch Buffer                        | ON
   *-----------------------------------------------------------------------------
@@ -120,6 +120,8 @@
 
 #include "stm32f2xx.h"
 
+#define USE_120MHZ	1
+
 /**
   * @}
   */
@@ -153,7 +155,11 @@
 #define PLL_N      240
 
 /* SYSCLK = PLL_VCO / PLL_P */
+#ifdef USE_120MHZ
+#define PLL_P      2
+#else
 #define PLL_P      4
+#endif
 
 /* USB OTG FS, SDIO and RNG Clock =  PLL_VCO / PLLQ */
 #define PLL_Q      5
@@ -376,11 +382,18 @@ static void SetSysClock(void)
     /* HCLK = SYSCLK / 1*/
     RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
       
-    /* PCLK2 = HCLK / 1*/
-    RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
-    
-    /* PCLK1 = HCLK / 2*/
+    /* PCLK2 = HCLK / 2*/
+#ifdef USE_120MHZ
+    RCC->CFGR |= RCC_CFGR_PPRE2_DIV4;
+#else
+    RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
+#endif    
+    /* PCLK1 = HCLK / 4*/
+#ifdef USE_120MHZ
+    RCC->CFGR |= RCC_CFGR_PPRE1_DIV4;
+#else
     RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
+#endif    
 
     /* Configure the main PLL */
     RCC->PLLCFGR = PLL_M | (PLL_N << 6) | (((PLL_P >> 1) -1) << 16) |
@@ -395,7 +408,7 @@ static void SetSysClock(void)
     }
    
     /* Configure Flash prefetch, Instruction cache, Data cache and wait state */
-    FLASH->ACR = FLASH_ACR_PRFTEN |FLASH_ACR_ICEN |FLASH_ACR_DCEN |FLASH_ACR_LATENCY_2WS;
+    FLASH->ACR = FLASH_ACR_PRFTEN | FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_3WS;
 
     /* Select the main PLL as system clock source */
     RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_SW));
@@ -411,8 +424,12 @@ static void SetSysClock(void)
          configuration. User can add here some code to deal with this error */
   }
 
+#ifdef USE_120MHZ
+	Master_frequency = 120000000 ;
+#else
 	Master_frequency = 60000000 ;
-	Peri1_frequency = 15000000 ;
+#endif
+	Peri1_frequency = 30000000 ;
 	Peri2_frequency = 30000000 ;
 	Timer_mult1 = 2 ;
 	Timer_mult2 = 2 ;

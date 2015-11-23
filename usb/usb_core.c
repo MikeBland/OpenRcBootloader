@@ -1946,6 +1946,7 @@ void USB_OTG_EP0_OutStart(USB_OTG_CORE_HANDLE *pdev)
 * @param  None
 * @retval : None
 */
+#ifndef BOOT
 void USB_OTG_ActiveRemoteWakeup(USB_OTG_CORE_HANDLE *pdev)
 {
   
@@ -1975,13 +1976,14 @@ void USB_OTG_ActiveRemoteWakeup(USB_OTG_CORE_HANDLE *pdev)
     }
   }
 }
-
+#endif
 
 /**
 * @brief  USB_OTG_UngateClock : active USB Core clock
 * @param  None
 * @retval : None
 */
+#ifndef BOOT
 void USB_OTG_UngateClock(USB_OTG_CORE_HANDLE *pdev)
 {
   if(pdev->cfg.low_power)
@@ -2003,12 +2005,14 @@ void USB_OTG_UngateClock(USB_OTG_CORE_HANDLE *pdev)
     }
   }
 }
+#endif
 
 /**
 * @brief  Stop the device and clean up fifo's
 * @param  None
 * @retval : None
 */
+#ifndef BOOT
 void USB_OTG_StopDevice(USB_OTG_CORE_HANDLE *pdev)
 {
   uint32_t i;
@@ -2030,6 +2034,7 @@ void USB_OTG_StopDevice(USB_OTG_CORE_HANDLE *pdev)
   USB_OTG_FlushRxFifo(pdev);
   USB_OTG_FlushTxFifo(pdev ,  0x10 );  
 }
+#endif
 
 /**
 * @brief  returns the EP Status

@@ -130,7 +130,9 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+#ifndef BOOT
 static __I uint8_t APBAHBPrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6, 7, 8, 9};
+#endif
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -199,6 +201,7 @@ static __I uint8_t APBAHBPrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6
   * @param  None
   * @retval None
   */
+#ifndef BOOT
 void RCC_DeInit(void)
 {
   /* Set HSION bit */
@@ -219,6 +222,7 @@ void RCC_DeInit(void)
   /* Disable all interrupts */
   RCC->CIR = 0x00000000;
 }
+#endif
 
 /**
   * @brief  Configures the External High Speed oscillator (HSE).
@@ -240,6 +244,7 @@ void RCC_DeInit(void)
   *            @arg RCC_HSE_Bypass: HSE oscillator bypassed with external clock
   * @retval None
   */
+#ifndef BOOT
 void RCC_HSEConfig(uint8_t RCC_HSE)
 {
   /* Check the parameters */
@@ -251,6 +256,7 @@ void RCC_HSEConfig(uint8_t RCC_HSE)
   /* Set the new HSE configuration -------------------------------------------*/
   *(__IO uint8_t *) CR_BYTE3_ADDRESS = RCC_HSE;
 }
+#endif
 
 /**
   * @brief  Waits for HSE start-up.
@@ -264,6 +270,7 @@ void RCC_HSEConfig(uint8_t RCC_HSE)
   *          - SUCCESS: HSE oscillator is stable and ready to use
   *          - ERROR: HSE oscillator not yet ready
   */
+#ifndef BOOT
 ErrorStatus RCC_WaitForHSEStartUp(void)
 {
   __IO uint32_t startupcounter = 0;
@@ -286,6 +293,7 @@ ErrorStatus RCC_WaitForHSEStartUp(void)
   }
   return (status);
 }
+#endif
 
 /**
   * @brief  Adjusts the Internal High Speed oscillator (HSI) calibration value.
@@ -295,6 +303,7 @@ ErrorStatus RCC_WaitForHSEStartUp(void)
   *         This parameter must be a number between 0 and 0x1F.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AdjustHSICalibrationValue(uint8_t HSICalibrationValue)
 {
   uint32_t tmpreg = 0;
@@ -312,6 +321,7 @@ void RCC_AdjustHSICalibrationValue(uint8_t HSICalibrationValue)
   /* Store the new value */
   RCC->CR = tmpreg;
 }
+#endif
 
 /**
   * @brief  Enables or disables the Internal High Speed oscillator (HSI).
@@ -331,6 +341,7 @@ void RCC_AdjustHSICalibrationValue(uint8_t HSICalibrationValue)
   *         clock cycles.  
   * @retval None
   */
+#ifndef BOOT
 void RCC_HSICmd(FunctionalState NewState)
 {
   /* Check the parameters */
@@ -338,6 +349,7 @@ void RCC_HSICmd(FunctionalState NewState)
 
   *(__IO uint32_t *) CR_HSION_BB = (uint32_t)NewState;
 }
+#endif
 
 /**
   * @brief  Configures the External Low Speed oscillator (LSE).
@@ -356,6 +368,7 @@ void RCC_HSICmd(FunctionalState NewState)
   *            @arg RCC_LSE_Bypass: LSE oscillator bypassed with external clock
   * @retval None
   */
+#ifndef BOOT
 void RCC_LSEConfig(uint8_t RCC_LSE)
 {
   /* Check the parameters */
@@ -383,6 +396,7 @@ void RCC_LSEConfig(uint8_t RCC_LSE)
       break;
   }
 }
+#endif
 
 /**
   * @brief  Enables or disables the Internal Low Speed oscillator (LSI).
@@ -396,6 +410,7 @@ void RCC_LSEConfig(uint8_t RCC_LSE)
   *         clock cycles. 
   * @retval None
   */
+#ifndef BOOT
 void RCC_LSICmd(FunctionalState NewState)
 {
   /* Check the parameters */
@@ -403,6 +418,7 @@ void RCC_LSICmd(FunctionalState NewState)
 
   *(__IO uint32_t *) CSR_LSION_BB = (uint32_t)NewState;
 }
+#endif
 
 /**
   * @brief  Configures the main PLL clock source, multiplication and division factors.
@@ -439,6 +455,7 @@ void RCC_LSICmd(FunctionalState NewState)
   *   
   * @retval None
   */
+#ifndef BOOT
 void RCC_PLLConfig(uint32_t RCC_PLLSource, uint32_t PLLM, uint32_t PLLN, uint32_t PLLP, uint32_t PLLQ)
 {
   /* Check the parameters */
@@ -451,6 +468,7 @@ void RCC_PLLConfig(uint32_t RCC_PLLSource, uint32_t PLLM, uint32_t PLLN, uint32_
   RCC->PLLCFGR = PLLM | (PLLN << 6) | (((PLLP >> 1) -1) << 16) | (RCC_PLLSource) |
                  (PLLQ << 24);
 }
+#endif
 
 /**
   * @brief  Enables or disables the main PLL.
@@ -462,12 +480,14 @@ void RCC_PLLConfig(uint32_t RCC_PLLSource, uint32_t PLLM, uint32_t PLLN, uint32_
   * @param  NewState: new state of the main PLL. This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_PLLCmd(FunctionalState NewState)
 {
   /* Check the parameters */
   assert_param(IS_FUNCTIONAL_STATE(NewState));
   *(__IO uint32_t *) CR_PLLON_BB = (uint32_t)NewState;
 }
+#endif
 
 /**
   * @brief  Configures the PLLI2S clock multiplication and division factors.
@@ -489,6 +509,7 @@ void RCC_PLLCmd(FunctionalState NewState)
   *   
   * @retval None
   */
+#ifndef BOOT
 void RCC_PLLI2SConfig(uint32_t PLLI2SN, uint32_t PLLI2SR)
 {
   /* Check the parameters */
@@ -497,6 +518,7 @@ void RCC_PLLI2SConfig(uint32_t PLLI2SN, uint32_t PLLI2SR)
 
   RCC->PLLI2SCFGR = (PLLI2SN << 6) | (PLLI2SR << 28);
 }
+#endif
 
 /**
   * @brief  Enables or disables the PLLI2S.
@@ -505,12 +527,14 @@ void RCC_PLLI2SConfig(uint32_t PLLI2SN, uint32_t PLLI2SR)
   * @param  NewState: new state of the PLLI2S. This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_PLLI2SCmd(FunctionalState NewState)
 {
   /* Check the parameters */
   assert_param(IS_FUNCTIONAL_STATE(NewState));
   *(__IO uint32_t *) CR_PLLI2SON_BB = (uint32_t)NewState;
 }
+#endif
 
 /**
   * @brief  Enables or disables the Clock Security System.
@@ -523,12 +547,14 @@ void RCC_PLLI2SCmd(FunctionalState NewState)
   *         This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_ClockSecuritySystemCmd(FunctionalState NewState)
 {
   /* Check the parameters */
   assert_param(IS_FUNCTIONAL_STATE(NewState));
   *(__IO uint32_t *) CR_CSSON_BB = (uint32_t)NewState;
 }
+#endif
 
 /**
   * @brief  Selects the clock source to output on MCO1 pin(PA8).
@@ -548,6 +574,7 @@ void RCC_ClockSecuritySystemCmd(FunctionalState NewState)
   *            @arg RCC_MCO1Div_5: division by 5 applied to MCO1 clock
   * @retval None
   */
+#ifndef BOOT
 void RCC_MCO1Config(uint32_t RCC_MCO1Source, uint32_t RCC_MCO1Div)
 {
   uint32_t tmpreg = 0;
@@ -567,6 +594,7 @@ void RCC_MCO1Config(uint32_t RCC_MCO1Source, uint32_t RCC_MCO1Div)
   /* Store the new value */
   RCC->CFGR = tmpreg;  
 }
+#endif
 
 /**
   * @brief  Selects the clock source to output on MCO2 pin(PC9).
@@ -586,6 +614,7 @@ void RCC_MCO1Config(uint32_t RCC_MCO1Source, uint32_t RCC_MCO1Div)
   *            @arg RCC_MCO2Div_5: division by 5 applied to MCO2 clock
   * @retval None
   */
+#ifndef BOOT
 void RCC_MCO2Config(uint32_t RCC_MCO2Source, uint32_t RCC_MCO2Div)
 {
   uint32_t tmpreg = 0;
@@ -605,6 +634,7 @@ void RCC_MCO2Config(uint32_t RCC_MCO2Source, uint32_t RCC_MCO2Div)
   /* Store the new value */
   RCC->CFGR = tmpreg;  
 }
+#endif
 
 /**
   * @}
@@ -691,6 +721,7 @@ void RCC_MCO2Config(uint32_t RCC_MCO2Source, uint32_t RCC_MCO2Div)
   *            @arg RCC_SYSCLKSource_PLLCLK: PLL selected as system clock source
   * @retval None
   */
+#ifndef BOOT
 void RCC_SYSCLKConfig(uint32_t RCC_SYSCLKSource)
 {
   uint32_t tmpreg = 0;
@@ -709,6 +740,7 @@ void RCC_SYSCLKConfig(uint32_t RCC_SYSCLKSource)
   /* Store the new value */
   RCC->CFGR = tmpreg;
 }
+#endif
 
 /**
   * @brief  Returns the clock source used as system clock.
@@ -719,10 +751,12 @@ void RCC_SYSCLKConfig(uint32_t RCC_SYSCLKSource)
   *              - 0x04: HSE used as system clock
   *              - 0x08: PLL used as system clock
   */
+#ifndef BOOT
 uint8_t RCC_GetSYSCLKSource(void)
 {
   return ((uint8_t)(RCC->CFGR & RCC_CFGR_SWS));
 }
+#endif
 
 /**
   * @brief  Configures the AHB clock (HCLK).
@@ -744,6 +778,7 @@ uint8_t RCC_GetSYSCLKSource(void)
   *            @arg RCC_SYSCLK_Div512: AHB clock = SYSCLK/512
   * @retval None
   */
+#ifndef BOOT
 void RCC_HCLKConfig(uint32_t RCC_SYSCLK)
 {
   uint32_t tmpreg = 0;
@@ -762,6 +797,7 @@ void RCC_HCLKConfig(uint32_t RCC_SYSCLK)
   /* Store the new value */
   RCC->CFGR = tmpreg;
 }
+#endif
 
 
 /**
@@ -776,6 +812,7 @@ void RCC_HCLKConfig(uint32_t RCC_SYSCLK)
   *            @arg RCC_HCLK_Div16: APB1 clock = HCLK/16
   * @retval None
   */
+#ifndef BOOT
 void RCC_PCLK1Config(uint32_t RCC_HCLK)
 {
   uint32_t tmpreg = 0;
@@ -794,6 +831,7 @@ void RCC_PCLK1Config(uint32_t RCC_HCLK)
   /* Store the new value */
   RCC->CFGR = tmpreg;
 }
+#endif
 
 /**
   * @brief  Configures the High Speed APB clock (PCLK2).
@@ -807,6 +845,7 @@ void RCC_PCLK1Config(uint32_t RCC_HCLK)
   *            @arg RCC_HCLK_Div16: APB2 clock = HCLK/16
   * @retval None
   */
+#ifndef BOOT
 void RCC_PCLK2Config(uint32_t RCC_HCLK)
 {
   uint32_t tmpreg = 0;
@@ -825,6 +864,7 @@ void RCC_PCLK2Config(uint32_t RCC_HCLK)
   /* Store the new value */
   RCC->CFGR = tmpreg;
 }
+#endif
 
 /**
   * @brief  Returns the frequencies of different on chip clocks; SYSCLK, HCLK, 
@@ -859,6 +899,7 @@ void RCC_PCLK2Config(uint32_t RCC_HCLK)
   *    
   * @retval None
   */
+#ifndef BOOT
 void RCC_GetClocksFreq(RCC_ClocksTypeDef* RCC_Clocks)
 {
   uint32_t tmp = 0, presc = 0, pllvco = 0, pllp = 2, pllsource = 0, pllm = 2;
@@ -923,6 +964,7 @@ void RCC_GetClocksFreq(RCC_ClocksTypeDef* RCC_Clocks)
   /* PCLK2 clock frequency */
   RCC_Clocks->PCLK2_Frequency = RCC_Clocks->HCLK_Frequency >> presc;
 }
+#endif
 
 /**
   * @}
@@ -984,6 +1026,7 @@ void RCC_GetClocksFreq(RCC_ClocksTypeDef* RCC_Clocks)
   *  
   * @retval None
   */
+#ifndef BOOT
 void RCC_RTCCLKConfig(uint32_t RCC_RTCCLKSource)
 {
   uint32_t tmpreg = 0;
@@ -1008,6 +1051,7 @@ void RCC_RTCCLKConfig(uint32_t RCC_RTCCLKSource)
   /* Select the RTC clock source */
   RCC->BDCR |= (RCC_RTCCLKSource & 0x00000FFF);
 }
+#endif
 
 /**
   * @brief  Enables or disables the RTC clock.
@@ -1016,6 +1060,7 @@ void RCC_RTCCLKConfig(uint32_t RCC_RTCCLKSource)
   * @param  NewState: new state of the RTC clock. This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_RTCCLKCmd(FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1023,6 +1068,7 @@ void RCC_RTCCLKCmd(FunctionalState NewState)
 
   *(__IO uint32_t *) BDCR_RTCEN_BB = (uint32_t)NewState;
 }
+#endif
 
 /**
   * @brief  Forces or releases the Backup domain reset.
@@ -1033,12 +1079,14 @@ void RCC_RTCCLKCmd(FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_BackupResetCmd(FunctionalState NewState)
 {
   /* Check the parameters */
   assert_param(IS_FUNCTIONAL_STATE(NewState));
   *(__IO uint32_t *) BDCR_BDRST_BB = (uint32_t)NewState;
 }
+#endif
 
 /**
   * @brief  Configures the I2S clock source (I2SCLK).
@@ -1053,6 +1101,7 @@ void RCC_BackupResetCmd(FunctionalState NewState)
   *                                        used as I2S clock source
   * @retval None
   */
+#ifndef BOOT
 void RCC_I2SCLKConfig(uint32_t RCC_I2SCLKSource)
 {
   /* Check the parameters */
@@ -1060,6 +1109,7 @@ void RCC_I2SCLKConfig(uint32_t RCC_I2SCLKSource)
 
   *(__IO uint32_t *) CFGR_I2SSRC_BB = RCC_I2SCLKSource;
 }
+#endif
 
 /**
   * @brief  Enables or disables the AHB1 peripheral clock.
@@ -1150,6 +1200,7 @@ void RCC_AHB2PeriphClockCmd(uint32_t RCC_AHB2Periph, FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AHB3PeriphClockCmd(uint32_t RCC_AHB3Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1165,6 +1216,7 @@ void RCC_AHB3PeriphClockCmd(uint32_t RCC_AHB3Periph, FunctionalState NewState)
     RCC->AHB3ENR &= ~RCC_AHB3Periph;
   }
 }
+#endif
 
 /**
   * @brief  Enables or disables the Low Speed APB (APB1) peripheral clock.
@@ -1279,6 +1331,7 @@ void RCC_APB2PeriphClockCmd(uint32_t RCC_APB2Periph, FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AHB1PeriphResetCmd(uint32_t RCC_AHB1Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1294,6 +1347,7 @@ void RCC_AHB1PeriphResetCmd(uint32_t RCC_AHB1Periph, FunctionalState NewState)
     RCC->AHB1RSTR &= ~RCC_AHB1Periph;
   }
 }
+#endif
 
 /**
   * @brief  Forces or releases AHB2 peripheral reset.
@@ -1308,6 +1362,7 @@ void RCC_AHB1PeriphResetCmd(uint32_t RCC_AHB1Periph, FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AHB2PeriphResetCmd(uint32_t RCC_AHB2Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1323,6 +1378,7 @@ void RCC_AHB2PeriphResetCmd(uint32_t RCC_AHB2Periph, FunctionalState NewState)
     RCC->AHB2RSTR &= ~RCC_AHB2Periph;
   }
 }
+#endif
 
 /**
   * @brief  Forces or releases AHB3 peripheral reset.
@@ -1332,6 +1388,7 @@ void RCC_AHB2PeriphResetCmd(uint32_t RCC_AHB2Periph, FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AHB3PeriphResetCmd(uint32_t RCC_AHB3Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1347,6 +1404,7 @@ void RCC_AHB3PeriphResetCmd(uint32_t RCC_AHB3Periph, FunctionalState NewState)
     RCC->AHB3RSTR &= ~RCC_AHB3Periph;
   }
 }
+#endif
 
 /**
   * @brief  Forces or releases Low Speed APB (APB1) peripheral reset.
@@ -1461,6 +1519,7 @@ void RCC_APB2PeriphResetCmd(uint32_t RCC_APB2Periph, FunctionalState NewState)
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AHB1PeriphClockLPModeCmd(uint32_t RCC_AHB1Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1475,6 +1534,7 @@ void RCC_AHB1PeriphClockLPModeCmd(uint32_t RCC_AHB1Periph, FunctionalState NewSt
     RCC->AHB1LPENR &= ~RCC_AHB1Periph;
   }
 }
+#endif
 
 /**
   * @brief  Enables or disables the AHB2 peripheral clock during Low Power (Sleep) mode.
@@ -1493,6 +1553,7 @@ void RCC_AHB1PeriphClockLPModeCmd(uint32_t RCC_AHB1Periph, FunctionalState NewSt
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AHB2PeriphClockLPModeCmd(uint32_t RCC_AHB2Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1507,6 +1568,7 @@ void RCC_AHB2PeriphClockLPModeCmd(uint32_t RCC_AHB2Periph, FunctionalState NewSt
     RCC->AHB2LPENR &= ~RCC_AHB2Periph;
   }
 }
+#endif
 
 /**
   * @brief  Enables or disables the AHB3 peripheral clock during Low Power (Sleep) mode.
@@ -1520,6 +1582,7 @@ void RCC_AHB2PeriphClockLPModeCmd(uint32_t RCC_AHB2Periph, FunctionalState NewSt
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_AHB3PeriphClockLPModeCmd(uint32_t RCC_AHB3Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1534,6 +1597,7 @@ void RCC_AHB3PeriphClockLPModeCmd(uint32_t RCC_AHB3Periph, FunctionalState NewSt
     RCC->AHB3LPENR &= ~RCC_AHB3Periph;
   }
 }
+#endif
 
 /**
   * @brief  Enables or disables the APB1 peripheral clock during Low Power (Sleep) mode.
@@ -1570,6 +1634,7 @@ void RCC_AHB3PeriphClockLPModeCmd(uint32_t RCC_AHB3Periph, FunctionalState NewSt
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_APB1PeriphClockLPModeCmd(uint32_t RCC_APB1Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1584,6 +1649,7 @@ void RCC_APB1PeriphClockLPModeCmd(uint32_t RCC_APB1Periph, FunctionalState NewSt
     RCC->APB1LPENR &= ~RCC_APB1Periph;
   }
 }
+#endif
 
 /**
   * @brief  Enables or disables the APB2 peripheral clock during Low Power (Sleep) mode.
@@ -1610,6 +1676,7 @@ void RCC_APB1PeriphClockLPModeCmd(uint32_t RCC_APB1Periph, FunctionalState NewSt
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_APB2PeriphClockLPModeCmd(uint32_t RCC_APB2Periph, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1624,6 +1691,7 @@ void RCC_APB2PeriphClockLPModeCmd(uint32_t RCC_APB2Periph, FunctionalState NewSt
     RCC->APB2LPENR &= ~RCC_APB2Periph;
   }
 }
+#endif
 
 /**
   * @}
@@ -1655,6 +1723,7 @@ void RCC_APB2PeriphClockLPModeCmd(uint32_t RCC_APB2Periph, FunctionalState NewSt
   *          This parameter can be: ENABLE or DISABLE.
   * @retval None
   */
+#ifndef BOOT
 void RCC_ITConfig(uint8_t RCC_IT, FunctionalState NewState)
 {
   /* Check the parameters */
@@ -1671,6 +1740,7 @@ void RCC_ITConfig(uint8_t RCC_IT, FunctionalState NewState)
     *(__IO uint8_t *) CIR_BYTE2_ADDRESS &= (uint8_t)~RCC_IT;
   }
 }
+#endif
 
 /**
   * @brief  Checks whether the specified RCC flag is set or not.
@@ -1691,6 +1761,7 @@ void RCC_ITConfig(uint8_t RCC_IT, FunctionalState NewState)
   *            @arg RCC_FLAG_LPWRRST: Low Power reset
   * @retval The new state of RCC_FLAG (SET or RESET).
   */
+#ifndef BOOT
 FlagStatus RCC_GetFlagStatus(uint8_t RCC_FLAG)
 {
   uint32_t tmp = 0;
@@ -1728,6 +1799,7 @@ FlagStatus RCC_GetFlagStatus(uint8_t RCC_FLAG)
   /* Return the flag status */
   return bitstatus;
 }
+#endif
 
 /**
   * @brief  Clears the RCC reset flags.
@@ -1736,11 +1808,13 @@ FlagStatus RCC_GetFlagStatus(uint8_t RCC_FLAG)
   * @param  None
   * @retval None
   */
+#ifndef BOOT
 void RCC_ClearFlag(void)
 {
   /* Set RMVF bit to clear the reset flags */
   RCC->CSR |= RCC_CSR_RMVF;
 }
+#endif
 
 /**
   * @brief  Checks whether the specified RCC interrupt has occurred or not.
@@ -1755,6 +1829,7 @@ void RCC_ClearFlag(void)
   *            @arg RCC_IT_CSS: Clock Security System interrupt
   * @retval The new state of RCC_IT (SET or RESET).
   */
+#ifndef BOOT
 ITStatus RCC_GetITStatus(uint8_t RCC_IT)
 {
   ITStatus bitstatus = RESET;
@@ -1774,6 +1849,7 @@ ITStatus RCC_GetITStatus(uint8_t RCC_IT)
   /* Return the RCC_IT status */
   return  bitstatus;
 }
+#endif
 
 /**
   * @brief  Clears the RCC's interrupt pending bits.
@@ -1788,6 +1864,7 @@ ITStatus RCC_GetITStatus(uint8_t RCC_IT)
   *            @arg RCC_IT_CSS: Clock Security System interrupt
   * @retval None
   */
+#ifndef BOOT
 void RCC_ClearITPendingBit(uint8_t RCC_IT)
 {
   /* Check the parameters */
@@ -1797,6 +1874,7 @@ void RCC_ClearITPendingBit(uint8_t RCC_IT)
      pending bits */
   *(__IO uint8_t *) CIR_BYTE3_ADDRESS = RCC_IT;
 }
+#endif
 
 /**
   * @}

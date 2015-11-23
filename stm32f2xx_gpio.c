@@ -123,6 +123,7 @@
   * @param  GPIOx: where x can be (A..I) to select the GPIO peripheral.
   * @retval None
   */
+#ifndef BOOT
 void GPIO_DeInit(GPIO_TypeDef* GPIOx)
 {
   /* Check the parameters */
@@ -177,6 +178,7 @@ void GPIO_DeInit(GPIO_TypeDef* GPIOx)
     }
   }
 }
+#endif
 
 /**
   * @brief  Initializes the GPIOx peripheral according to the specified parameters in the GPIO_InitStruct.
@@ -237,6 +239,7 @@ void GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef* GPIO_InitStruct)
   * @param  GPIO_InitStruct : pointer to a GPIO_InitTypeDef structure which will be initialized.
   * @retval None
   */
+#ifndef BOOT
 void GPIO_StructInit(GPIO_InitTypeDef* GPIO_InitStruct)
 {
   /* Reset GPIO init structure parameters values */
@@ -246,6 +249,7 @@ void GPIO_StructInit(GPIO_InitTypeDef* GPIO_InitStruct)
   GPIO_InitStruct->GPIO_OType = GPIO_OType_PP;
   GPIO_InitStruct->GPIO_PuPd = GPIO_PuPd_NOPULL;
 }
+#endif
 
 /**
   * @brief  Locks GPIO Pins configuration registers.
@@ -258,6 +262,7 @@ void GPIO_StructInit(GPIO_InitTypeDef* GPIO_InitStruct)
   *          This parameter can be any combination of GPIO_Pin_x where x can be (0..15).
   * @retval None
   */
+#ifndef BOOT
 void GPIO_PinLockConfig(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
   __IO uint32_t tmp = 0x00010000;
@@ -278,6 +283,7 @@ void GPIO_PinLockConfig(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   /* Read LCKK bit*/
   tmp = GPIOx->LCKR;
 }
+#endif
 
 /**
   * @}
@@ -302,6 +308,7 @@ void GPIO_PinLockConfig(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   *         This parameter can be GPIO_Pin_x where x can be (0..15).
   * @retval The input port pin value.
   */
+#ifndef BOOT
 uint8_t GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
   uint8_t bitstatus = 0x00;
@@ -320,12 +327,14 @@ uint8_t GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   }
   return bitstatus;
 }
+#endif
 
 /**
   * @brief  Reads the specified GPIO input data port.
   * @param  GPIOx: where x can be (A..I) to select the GPIO peripheral.
   * @retval GPIO input data port value.
   */
+#ifndef BOOT
 uint16_t GPIO_ReadInputData(GPIO_TypeDef* GPIOx)
 {
   /* Check the parameters */
@@ -333,7 +342,7 @@ uint16_t GPIO_ReadInputData(GPIO_TypeDef* GPIOx)
 
   return ((uint16_t)GPIOx->IDR);
 }
-
+#endif
 /**
   * @brief  Reads the specified output data port bit.
   * @param  GPIOx: where x can be (A..I) to select the GPIO peripheral.
@@ -341,6 +350,7 @@ uint16_t GPIO_ReadInputData(GPIO_TypeDef* GPIOx)
   *          This parameter can be GPIO_Pin_x where x can be (0..15).
   * @retval The output port pin value.
   */
+#ifndef BOOT
 uint8_t GPIO_ReadOutputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
   uint8_t bitstatus = 0x00;
@@ -359,12 +369,14 @@ uint8_t GPIO_ReadOutputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   }
   return bitstatus;
 }
+#endif
 
 /**
   * @brief  Reads the specified GPIO output data port.
   * @param  GPIOx: where x can be (A..I) to select the GPIO peripheral.
   * @retval GPIO output data port value.
   */
+#ifndef BOOT
 uint16_t GPIO_ReadOutputData(GPIO_TypeDef* GPIOx)
 {
   /* Check the parameters */
@@ -372,7 +384,7 @@ uint16_t GPIO_ReadOutputData(GPIO_TypeDef* GPIOx)
 
   return ((uint16_t)GPIOx->ODR);
 }
-
+#endif
 /**
   * @brief  Sets the selected data port bits.
   * @note   This functions uses GPIOx_BSRR register to allow atomic read/modify 
@@ -383,6 +395,7 @@ uint16_t GPIO_ReadOutputData(GPIO_TypeDef* GPIOx)
   *          This parameter can be any combination of GPIO_Pin_x where x can be (0..15).
   * @retval None
   */
+#ifndef BOOT
 void GPIO_SetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
   /* Check the parameters */
@@ -391,7 +404,7 @@ void GPIO_SetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 
   GPIOx->BSRRL = GPIO_Pin;
 }
-
+#endif
 /**
   * @brief  Clears the selected data port bits.
   * @note   This functions uses GPIOx_BSRR register to allow atomic read/modify 
@@ -402,6 +415,7 @@ void GPIO_SetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   *          This parameter can be any combination of GPIO_Pin_x where x can be (0..15).
   * @retval None
   */
+#ifndef BOOT
 void GPIO_ResetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
   /* Check the parameters */
@@ -410,6 +424,7 @@ void GPIO_ResetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 
   GPIOx->BSRRH = GPIO_Pin;
 }
+#endif
 
 /**
   * @brief  Sets or clears the selected data port bit.
@@ -422,6 +437,7 @@ void GPIO_ResetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   *            @arg Bit_SET: to set the port pin
   * @retval None
   */
+#ifndef BOOT
 void GPIO_WriteBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, BitAction BitVal)
 {
   /* Check the parameters */
@@ -438,6 +454,7 @@ void GPIO_WriteBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, BitAction BitVal)
     GPIOx->BSRRH = GPIO_Pin ;
   }
 }
+#endif
 
 /**
   * @brief  Writes data to the specified GPIO data port.
@@ -445,6 +462,7 @@ void GPIO_WriteBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, BitAction BitVal)
   * @param  PortVal: specifies the value to be written to the port output data register.
   * @retval None
   */
+#ifndef BOOT
 void GPIO_Write(GPIO_TypeDef* GPIOx, uint16_t PortVal)
 {
   /* Check the parameters */
@@ -452,13 +470,14 @@ void GPIO_Write(GPIO_TypeDef* GPIOx, uint16_t PortVal)
 
   GPIOx->ODR = PortVal;
 }
-
+#endif
 /**
   * @brief  Toggles the specified GPIO pins..
   * @param  GPIOx: where x can be (A..I) to select the GPIO peripheral.
   * @param  GPIO_Pin: Specifies the pins to be toggled.
   * @retval None
   */
+#ifndef BOOT
 void GPIO_ToggleBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 {
   /* Check the parameters */
@@ -466,6 +485,7 @@ void GPIO_ToggleBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 
   GPIOx->ODR ^= GPIO_Pin;
 }
+#endif
 
 /**
   * @}
