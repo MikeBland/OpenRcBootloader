@@ -141,14 +141,17 @@ void configure_pins( uint32_t pins, uint16_t config )
   {
     if ( pins & thispin)
     {
-      pgpio->MODER  &= ~(GPIO_MODER_MODER0 << (pos * 2)) ;
-      pgpio->MODER |= (config & PIN_MODE_MASK) << (pos * 2) ;
+			uint32_t value ;
+			value = pgpio->MODER ;
+      value &= ~(GPIO_MODER_MODER0 << (pos * 2)) ;
+      pgpio->MODER = value | (config & PIN_MODE_MASK) << (pos * 2) ;
 
       if ( ( (config & PIN_MODE_MASK ) == PIN_OUTPUT) || ( (config & PIN_MODE_MASK) == PIN_PERIPHERAL) )
       {
         /* Speed mode configuration */
-        pgpio->OSPEEDR &= ~GPIO_OSPEEDER_OSPEEDR0 << (pos * 2) ;
-        pgpio->OSPEEDR |= ((config & PIN_SPEED_MASK) >> 13 ) << (pos * 2) ;
+				value = pgpio->OSPEEDR ;
+        value &= ~GPIO_OSPEEDER_OSPEEDR0 << (pos * 2) ;
+        pgpio->OSPEEDR = value | ((config & PIN_SPEED_MASK) >> 13 ) << (pos * 2) ;
 
         /* Output mode configuration*/
         pgpio->OTYPER  &= ~((GPIO_OTYPER_OT_0) << ((uint16_t)pos)) ;
@@ -158,11 +161,13 @@ void configure_pins( uint32_t pins, uint16_t config )
 				}
       }
       /* Pull-up Pull down resistor configuration*/
-      pgpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << ((uint16_t)pos * 2));
-      pgpio->PUPDR |= ((config & PIN_PULL_MASK) >> 2) << (pos * 2) ;
+			value = pgpio->PUPDR ;
+      value &= ~(GPIO_PUPDR_PUPDR0 << ((uint16_t)pos * 2));
+      pgpio->PUPDR = value | ((config & PIN_PULL_MASK) >> 2) << (pos * 2) ;
 
-			pgpio->AFR[pos >> 3] &= ~(0x000F << ((pos & 7)*4)) ;
-			pgpio->AFR[pos >> 3] |=	((config & PIN_PERI_MASK) >> 4) << ((pos & 7)*4) ;
+			value = pgpio->AFR[pos >> 3] ;
+			value &= ~(0x000F << ((pos & 7)*4)) ;
+			pgpio->AFR[pos >> 3] = value | ((config & PIN_PERI_MASK) >> 4) << ((pos & 7)*4) ;
     }
   }
 }

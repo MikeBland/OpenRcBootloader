@@ -365,6 +365,14 @@
 #define GPIO_Pin_SPI_EE_SCK							GPIO_Pin_3	// PB.03
 #define GPIO_Pin_SPI_EE_MOSI						GPIO_Pin_5	// PB.05
 #define GPIO_Pin_SPI_EE_MISO						GPIO_Pin_4	// PB.04
+
+// Mega64 programming
+#define GPIO_Pin_M64_RST								GPIO_Pin_10	// PC.10
+#define GPIO_Pin_M64_SCK								GPIO_Pin_8	// PA.08
+#define GPIO_Pin_M64_MOSI								GPIO_Pin_6	// PB.06
+#define GPIO_Pin_M64_MISO								GPIO_Pin_7	// PB.07
+
+
 #endif // PCB9XT
 
 

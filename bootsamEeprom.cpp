@@ -79,7 +79,7 @@ uint32_t isEepromStart( uint8_t *p )
 		csum += *p++ ;
 		size -= 1 ;
 	}
-	if ( csum == *p )
+	if ( ( csum & 0x00FF) == *p )
 	{
 		return 1 ;
 	}

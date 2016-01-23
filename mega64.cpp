@@ -56,6 +56,7 @@
 #include "stm32f2xx.h"
 #include "logicio.h"
 #include "timers.h"
+#include "hal.h"
 
 #define PORT9X_ID          ID_UART4
 #define PORT9X_BAUDRATE    200000
@@ -575,8 +576,13 @@ void displayToM64()
 	}
 }
 
+#define RST_HIGH()	 (GPIOC->BSRRL = GPIO_Pin_M64_RST)
+
 void initM64()
 {
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN ; 		// Enable portC clock
+	RST_HIGH() ;   /* RST high */
+	configure_pins( GPIO_Pin_M64_RST, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTC ) ;
 	USART1_Configure( 200000 ) ;
 }
 

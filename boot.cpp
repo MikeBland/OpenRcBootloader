@@ -104,7 +104,7 @@ extern "C" {
 __attribute__ ((section(".version"), used))
 const uint8_t Version[] =
 {
-	'B', 'O', 'O', 'T', '1', '7'
+	'B', 'O', 'O', 'T', '1', '9'
 } ;
 
 __attribute__ ((section(".text"), used))
@@ -969,6 +969,19 @@ extern uint8_t OptrexDisplay ;
   usbStart() ;
 #endif
 
+#ifdef PCB9XT
+	i = 40 ;
+	do
+	{
+		if ( Tenms )
+		{
+	    wdt_reset() ;  // Retrigger hardware watchdog
+			Tenms = 0 ;
+			i -= 1 ;
+		}
+	} while ( i ) ;
+#endif
+
 	for(;;)
 	{
 #ifdef PCBSKY
@@ -1103,12 +1116,21 @@ extern uint8_t OptrexDisplay ;
 				}
 				if ( state == ST_DIR_CHECK )
 				{
+					uint8_t event = getEvent() ;
 #if ( defined(PCBSKY) || defined(PCB9XT) )
 					lcd_puts_Pleft( 16, "\002No Firmware Files" ) ;
 #endif
 #ifdef PCBX9D
 					lcd_puts_Pleft( 16, "\010No Firmware Files" ) ;
 #endif
+					if ( event == EVT_KEY_REPT( KEY_TRN ) )
+					{
+						killEvents( event ) ;
+					}
+					if ( event == EVT_KEY_FIRST( KEY_TRN ) )
+					{
+						SDcardDisabled = SDcardDisabled ? 0 : 1;
+					}
 				}
 				if ( state == ST_OPEN_DIR )
 				{
@@ -1157,11 +1179,6 @@ extern uint8_t OptrexDisplay ;
 					}
 					{
 						uint8_t event = getEvent() ;
-//	lcd_outhex4( 100, FH, event ) ;
-						if ( event == EVT_KEY_REPT( KEY_TRN ) )
-						{
-							killEvents( event ) ;
-						}
 						if ( event == EVT_KEY_FIRST( KEY_TRN ) )
 						{
 							SDcardDisabled = SDcardDisabled ? 0 : 1;
