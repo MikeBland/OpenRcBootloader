@@ -102,6 +102,7 @@ extern "C" {
 #include "logicio.h"
 
 __attribute__ ((section(".version"), used))
+// Temp edit to force a push
 const uint8_t Version[] =
 {
 	'B', 'O', 'O', 'T', '1', '9'
