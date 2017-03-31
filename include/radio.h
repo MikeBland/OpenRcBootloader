@@ -14,6 +14,7 @@
 
 #define POWER_OFF			0
 #define POWER_ON			1
+#define POWER_X9E_STOP	3
 
 #define DIM(arr) (sizeof((arr))/sizeof((arr)[0]))
 
@@ -33,9 +34,9 @@
 #define EVT_KEY_MASK             0x0f
 
 
-#define NUM_KEYS 7
 
 #if ( defined(PCBSKY) || defined(PCB9XT) )
+#define NUM_KEYS 8
 enum EnumKeys {
     KEY_MENU ,
     KEY_EXIT ,
@@ -43,11 +44,13 @@ enum EnumKeys {
     KEY_UP  ,
     KEY_RIGHT ,
     KEY_LEFT,
-		KEY_TRN
+		KEY_TRN,
+	  BTN_RE
 } ;
 #endif
 
 #ifdef PCBX9D
+#define NUM_KEYS 8
 enum EnumKeys {
     KEY_MENU ,
     KEY_EXIT ,
@@ -55,7 +58,8 @@ enum EnumKeys {
     KEY_PAGE ,
     KEY_PLUS ,
     KEY_MINUS,
-		KEY_TRN
+		KEY_TRN,
+	  BTN_RE
 } ;
 #endif
 

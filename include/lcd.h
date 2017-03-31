@@ -22,8 +22,14 @@
 #define lcd_h
 
 #ifdef PCBX9D
+#ifdef PCBX7
+#define DISPLAY_W 128
+#define DISPLAY_H  64
+#else
+#define WIDE_DISPLAY
 #define DISPLAY_W 212
 #define DISPLAY_H  64
+#endif
 #endif
 
 #if ( defined(PCBSKY) || defined(PCB9XT) )

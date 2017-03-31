@@ -56,7 +56,7 @@
 #include "AT91SAM3S4.h"
 
 
-uint8_t Eblock_buffer[4096] ;
+extern uint8_t Block_buffer[4096] ;
 uint8_t Eblock_current[4096] ;		// For erased checking
 int32_t EblockAddress ;
 
@@ -456,7 +456,7 @@ void writeBlock()
     memset( Eblock_current, 0xFF, 4096 ) ;		// Now erased
 	}
 			
-	s = Eblock_buffer ;
+	s = Block_buffer ;
 	address = EblockAddress ;
 	for ( i = 0 ; i < 16 ; i += 1 )		// pages in block
 	{
@@ -476,8 +476,8 @@ void writeBlock()
 
 void readBlock( uint32_t block_address )
 {
-  AT25D_Read( Eblock_buffer, 4096, block_address ) ;	// read block to write to
-  memcpy( Eblock_current, Eblock_buffer, 4096 ) ;			// Copy for erase checking
+  AT25D_Read( Block_buffer, 4096, block_address ) ;	// read block to write to
+  memcpy( Eblock_current, Block_buffer, 4096 ) ;			// Copy for erase checking
 
 	EblockAddress = block_address ;
 }
@@ -555,7 +555,7 @@ uint32_t ee32_write( const uint8_t *buffer, uint32_t sector, uint32_t count )
 			readBlock( block_address ) ;
 		}
 
-		dest = Eblock_buffer + (memoryOffset & 0x0FFF ) ;
+		dest = Block_buffer + (memoryOffset & 0x0FFF ) ;
 		s = pBuffer ;
 		bytes_to_copy = 4096 - ( memoryOffset - block_address ) ;
 		if ( bytes_to_copy > bytesToWrite )
@@ -569,7 +569,7 @@ uint32_t ee32_write( const uint8_t *buffer, uint32_t sector, uint32_t count )
 		memoryOffset += bytes_to_copy ;
 		bytesToWrite -= bytes_to_copy ;
 		 
-		if ( dest > &Eblock_buffer[4095] )
+		if ( dest > &Block_buffer[4095] )
 		{
 			// copied data past end
 			writeBlock() ;

@@ -47,6 +47,16 @@
 #include "radio.h"
 #include "logicio.h"
 
+#if (defined(REV9E) || defined(PCBX7))
+#define POWER_STATE_OFF				0
+#define POWER_STATE_START			1
+#define POWER_STATE_RUNNING		2
+#define POWER_STATE_STOPPING	3
+#define POWER_STATE_STOPPED		4
+
+uint8_t PowerState = POWER_STATE_OFF ;
+#endif
+
 #ifdef PCBSKY 
 
 
@@ -89,18 +99,66 @@ void soft_power_off()
 
 uint32_t check_soft_power()
 {
-  if (GPIO_ReadInputDataBit(GPIOPWR, PIN_PWR_STATUS) == Bit_RESET)
+#if (defined(REV9E) || defined(PCBX7))
+	uint32_t switchValue ;
+#endif
+  
+#if (defined(REV9E) || defined(PCBX7))
+	switchValue = GPIO_ReadInputDataBit(GPIOPWR, PIN_PWR_STATUS) == Bit_RESET ;
+	switch ( PowerState )
+	{
+		case POWER_STATE_OFF :
+		default :
+			PowerState = POWER_STATE_START ;
+   		return POWER_ON ;
+		break ;
+			
+		case POWER_STATE_START :
+			if ( !switchValue )
+			{
+				PowerState = POWER_STATE_RUNNING ;
+			}
+   		return POWER_ON ;
+		break ;
+
+		case POWER_STATE_RUNNING :
+			if ( switchValue )
+			{
+				PowerState = POWER_STATE_STOPPING ;
+   			return POWER_X9E_STOP ;
+			}
+   		return POWER_ON ;
+		break ;
+
+		case POWER_STATE_STOPPING :
+			if ( !switchValue )
+			{
+				PowerState = POWER_STATE_STOPPED ;
+			}
+ 			return POWER_OFF ;
+		break ;
+
+		case POWER_STATE_STOPPED :
+ 			return POWER_OFF ;
+		break ;
+	}
+
+#else // REV9E
+	if (GPIO_ReadInputDataBit(GPIOPWR, PIN_PWR_STATUS) == Bit_RESET)
     return POWER_ON;
   else
     return POWER_OFF;
+#endif
 }
 
 void init_soft_power()
 {
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
-	GPIO_ResetBits(GPIOPWR, PIN_INT_RF_PWR | PIN_EXT_RF_PWR);
 #ifdef REVPLUS
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN ; 		// Enable portD clock
+#endif
+#ifdef PCBX7
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN ; 		// Enable portC clock
 #endif
 	GPIO_ResetBits(GPIOPWRINT, PIN_INT_RF_PWR );
 	GPIO_ResetBits(GPIOPWREXT, PIN_EXT_RF_PWR);
@@ -111,7 +169,12 @@ void init_soft_power()
 	configure_pins( PIN_INT_RF_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTC ) ;
 	configure_pins( PIN_EXT_RF_PWR | PIN_MCU_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTD ) ;
 #else
+ #ifdef PCBX7
+	configure_pins( PIN_INT_RF_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTC ) ;
+	configure_pins( PIN_EXT_RF_PWR | PIN_MCU_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTD ) ;
+ #else
 	configure_pins( PIN_INT_RF_PWR | PIN_EXT_RF_PWR | PIN_MCU_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTD ) ;
+ #endif
 #endif
 	configure_pins( PIN_PWR_STATUS, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
 	
@@ -120,6 +183,9 @@ void init_soft_power()
   // Soft power ON
 	
 	GPIO_SetBits(GPIOPWR,PIN_MCU_PWR);
+#if (defined(REV9E) || defined(PCBX7))
+	PowerState = POWER_STATE_START ;
+#endif
 
 }
 

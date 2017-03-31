@@ -1224,21 +1224,23 @@ int32_t fat12Write( const uint8_t *buffer, uint16_t sector, uint32_t count )
 	// TO DO, actually write to the EEPROM
 	if ( sector >= 3 )
 	{
-		if ( sector < 1027 )
+		sector -= 3 ;
+		// Look for a 4K block boundary, writing 4K+
+		if ( sector < 1024 )
 		{
   		while (count)
 			{
-				ee32_write( buffer, sector-3, count ) ;
+				ee32_write( buffer, sector, count ) ;
 		    buffer += BLOCKSIZE ;
     		sector++ ;
 		    count-- ;
 			}
 		}	
-		else if ( sector < 2051 )
+		else if ( sector < 2048 )
 		{
 			// FIRMWARE
 			uint32_t address ;
-			address = sector - 1027 ;
+			address = sector - 1024 ;
 			address *= 512 ;
 			address += 0x08000000 ;
 			// Write to flash

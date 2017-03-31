@@ -376,6 +376,8 @@ unsigned char MEDSdcard_Initialize(Media *media, unsigned char mciID)
     return 1;
 }
 
+extern uint16_t BlockLimit ;
+
 unsigned char EEPROM_Initialize(Media *media, unsigned char mciID)
 {
     media->write = Eeprom_Write;
@@ -388,11 +390,7 @@ unsigned char EEPROM_Initialize(Media *media, unsigned char mciID)
     media->blockSize = 512 ;
     media->baseAddress = 0;
 
-#ifdef REVX
-    media->size = 2051 ;
-#else
-    media->size = 1539 ;
-#endif
+    media->size = BlockLimit + 3 ;
 
     media->mappedRD  = 0;
     media->mappedWR  = 0;

@@ -20,7 +20,7 @@
 #include "timers.h"
 
 
-#define	I2C_delay()   hw_delay( 100 )
+#define	I2C_delay()   hw_delay( 25 )
 
 /**
   * @brief  Configure the used I/O ports pin

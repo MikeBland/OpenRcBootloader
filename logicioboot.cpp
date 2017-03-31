@@ -414,10 +414,24 @@ uint32_t readTrainerSwitch( void )
 #ifdef PCBX9D
 void init_keys()
 {
+#ifdef PCBX7
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
+	configure_pins( 0x008C, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+	configure_pins( 0x0400, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+#else // PCBX7
+#ifdef REV9E	
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN ; 		// Enable portF clock
+	configure_pins( PIN_BUTTON_MENU | PIN_BUTTON_EXIT | PIN_BUTTON_PAGE, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+	configure_pins( PIN_BUTTON_ENCODER, PIN_INPUT | PIN_PULLUP | PIN_PORTF ) ;
+#else
 // Buttons PE10, 11, 12, PD2, 3, 7
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
 	configure_pins( 0x3C00, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
 	configure_pins( 0x008C, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+#endif
+#endif // PCBX7
 }
 
 // Reqd. bit 6 LEFT, 5 RIGHT, 4 UP, 3 DOWN 2 EXIT 1 MENU
@@ -429,6 +443,28 @@ uint32_t read_keys()
 	x = GPIOD->IDR ; // 7 MENU, 3 PAGE(UP), 2 EXIT
 	
 	y = 0 ;
+	
+#ifdef PCBX7
+	if ( x & PIN_BUTTON_MENU )
+	{
+		y |= 0x02 << KEY_MENU ;			// MENU
+	}
+	if ( x & PIN_BUTTON_PAGE )
+	{
+		y |= 0x02 << KEY_PAGE ;		// LEFT
+	}
+	if ( x & PIN_BUTTON_EXIT )
+	{
+		y |= 0x02 << KEY_EXIT ;			// EXIT
+	}
+	x = GPIOE->IDR ;
+	if ( x & PIN_BUTTON_ENCODER )
+	{
+		y |= 0x02 << KEY_ENTER ;	// RIGHT
+	}
+	y |= (0x02 << KEY_PLUS) | (0x02 << KEY_MINUS) ;
+#else
+	
 	if ( x & PIN_BUTTON_MENU )
 	{
 		y |= 0x02 << KEY_MENU ;			// up
@@ -444,6 +480,14 @@ uint32_t read_keys()
 //		y |= 0x02 << KEY_EXIT ;			// EXIT
 	}
 	
+#ifdef REV9E	
+	x = GPIOF->IDR ;
+	if ( x & PIN_BUTTON_ENCODER )
+	{
+		y |= 0x02 << KEY_ENTER ;			// EXIT
+	}
+	y |= (0x02 << KEY_PLUS) | (0x02 << KEY_MINUS) ;
+#else
 	x = GPIOE->IDR ; // 10 RIGHT(+), 11 LEFT(-), 12 ENT(DOWN)
 	if ( x & PIN_BUTTON_PLUS )
 	{
@@ -460,16 +504,26 @@ uint32_t read_keys()
 		y |= 0x02 << KEY_ENTER ;			// EXIT
 //		y |= 0x02 << KEY_RIGHT ;		// RIGHT
 	}
+#endif
+#endif // PCBX7
 	return y ;
 }
 
 uint32_t readTrainerSwitch( void )
 {
-#ifdef REVPLUS
+#ifdef PCBX7
 	if ( GPIOD->IDR & PIN_SW_H )
+#else // PCBX7
+#ifdef REVPLUS
+ #ifdef REV9E
+	if ( (GPIOF->IDR & GPIO_Pin_1) == 0 )
+ #else
+	if ( GPIOD->IDR & PIN_SW_H )
+ #endif
 #else
 	if ( GPIOE->IDR & PIN_SW_H )
 #endif
+#endif // PCBX7
 	{
 		return 0 ;
 	}
@@ -479,10 +533,22 @@ uint32_t readTrainerSwitch( void )
 // 
 void setup_switches()
 {
+#ifdef PCBX7
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
+	configure_pins( 0x0020, PIN_INPUT | PIN_PULLUP | PIN_PORTA ) ;
+	configure_pins( PIN_SW_H | PIN_SW_C_L, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+	configure_pins( 0xE087, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+	 
+#else // PCBX7
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ; 		// Enable portB clock
 #ifdef REVPLUS
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portE clock
+#endif
+#ifdef REV9E
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN ; 		// Enable portF clock
 #endif
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
 	configure_pins( 0x0020, PIN_INPUT | PIN_PULLUP | PIN_PORTA ) ;
@@ -493,8 +559,13 @@ void setup_switches()
 #endif
 	configure_pins( 0xE307, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
 #ifdef REVPLUS
-	configure_pins( PIN_SW_H, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+ #ifdef REV9E
+ 	configure_pins( GPIO_Pin_1, PIN_INPUT | PIN_PULLUP | PIN_PORTF) ;
+ #else
+ 	configure_pins( PIN_SW_H, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+ #endif
 #endif
+#endif // PCBX7
 	
 }
 

@@ -76,6 +76,8 @@ extern "C" {
 #endif
 
 #ifdef PCB9XT
+#define P9XT_DEBUG	1
+
 #include "stm32f2xx.h"
 #include "stm32f2xx_flash.h"
 #include "hal.h"
@@ -105,14 +107,24 @@ __attribute__ ((section(".version"), used))
 // Temp edit to force a push
 const uint8_t Version[] =
 {
-	'B', 'O', 'O', 'T', '1', '9'
+	'B', 'O', 'O', 'T', '2', '4'
 } ;
 
 __attribute__ ((section(".text"), used))
 
+#if defined(REV9E) || defined(PCBX7) || defined(PCBSKY)
+extern void init_rotary_encoder() ;
+extern void checkRotaryEncoder() ;
+#endif
+
+
 extern void usbPluggedIn( uint16_t allowSD ) ;
 #ifdef PCBSKY
 extern uint16_t usbLunStat() ;
+#endif
+
+#ifdef PCBSKY
+uint32_t LastResult ;
 #endif
 
 #ifdef PCBSKY
@@ -132,13 +144,26 @@ void createFat( uint32_t flashSize ) ;
 #endif
 
 #ifdef PCBX9D
+#ifdef REV9E
+#define BOOT_KEY_UP			KEY_PLUS
+#define BOOT_KEY_DOWN		KEY_MINUS
+#define BOOT_KEY_LEFT		KEY_ENTER
+#define BOOT_KEY_RIGHT	KEY_PAGE
+#define BOOT_KEY_MENU		KEY_MENU
+#define BOOT_KEY_EXIT		KEY_EXIT
+#else
 #define BOOT_KEY_UP			KEY_PLUS
 #define BOOT_KEY_DOWN		KEY_MINUS
 #define BOOT_KEY_LEFT		KEY_MENU
 #define BOOT_KEY_RIGHT	KEY_PAGE
 #define BOOT_KEY_MENU		KEY_ENTER
 #define BOOT_KEY_EXIT		KEY_EXIT
+#endif
+#ifdef PCBX7
+#define DISPLAY_CHAR_WIDTH	21
+#else // PCBX7
 #define DISPLAY_CHAR_WIDTH	35
+#endif // PCBX7
 #endif
 
 // states
@@ -190,6 +215,10 @@ uint32_t LockBits ;
 
 uint32_t Block_buffer[1024] ;
 UINT BlockCount ;
+
+#ifdef PCBSKY
+uint32_t ChipId ;
+#endif
 
 #if ( defined(PCBSKY) || defined(PCB9XT) )
 extern int32_t EblockAddress ;
@@ -335,6 +364,7 @@ uint32_t program( uint32_t *address, uint32_t *buffer )	// size is 256 bytes
 	uint32_t FlashSectorNum ;
 	uint32_t flash_cmd = 0 ;
 	uint32_t i ;
+	uint32_t size ;
 //	uint32_t flash_status = 0;
 	//	uint32_t EFCIndex = 0; // 0:EEFC0, 1: EEFC1
 	/* Initialize the function pointer (retrieve function address from NMI vector) */
@@ -350,25 +380,57 @@ uint32_t program( uint32_t *address, uint32_t *buffer )	// size is 256 bytes
 			FlashBlocked = 1 ;
 		}
 	}
+	if ( (uint32_t) address < 0x00408000 )
+	{
+		FlashBlocked = 1 ;
+		return 1 ;
+	}
 
 	if ( FlashBlocked )
 	{
 		return 1 ;
 	}
-	// Always initialise this here, setting a default doesn't seem to work
+
 	IAP_Function = (uint32_t (*)(uint32_t, uint32_t))  *(( uint32_t *)0x00800008) ;
 	FlashSectorNum = (uint32_t) address ;
-	FlashSectorNum >>= 8 ;		// page size is 256 bytes
-	FlashSectorNum &= 2047 ;	// max page number
 	
+	if ( ChipId & 0x0080 )
+	{
+		size = 128 ;
+		FlashSectorNum >>= 9 ;		// page size is 512 bytes
+		FlashSectorNum &= 1023 ;	// max page number
+	}
+	else
+	{
+	// Always initialise this here, setting a default doesn't seem to work
+		size = 64 ;
+		FlashSectorNum >>= 8 ;		// page size is 256 bytes
+		FlashSectorNum &= 2047 ;	// max page number
+	}
+
 	/* Send data to the sector here */
-	for ( i = 0 ; i < 64 ; i += 1 )
+	for ( i = 0 ; i < size ; i += 1 )
 	{
 		*address++ = *buffer++ ;		
 	}
-
-	/* build the command to send to EEFC */
-	flash_cmd = (0x5A << 24) | (FlashSectorNum << 8) | 0x03 ; //AT91C_MC_FCMD_EWP ;
+	
+	if ( ChipId & 0x0080 )
+	{
+		if ( ( FlashSectorNum & 7 ) == 0 )
+		{
+			flash_cmd = (0x5A << 24) | (FlashSectorNum << 8) | 0x00000100 | 0x07 ; //AT91C_MC_FCMD_EPA = erase (8) pages
+			__disable_irq() ;
+			/* Call the IAP function with appropriate command */
+			i = IAP_Function( 0, flash_cmd ) ;
+			__enable_irq() ;
+		}
+		flash_cmd = (0x5A << 24) | (FlashSectorNum << 8) | 0x01 ; //AT91C_MC_FCMD_WP = write page
+	}
+	else
+	{
+		/* build the command to send to EEFC */
+		flash_cmd = (0x5A << 24) | (FlashSectorNum << 8) | 0x03 ; //AT91C_MC_FCMD_EWP
+	}
 	
 	__disable_irq() ;
 	/* Call the IAP function with appropriate command */
@@ -592,6 +654,22 @@ uint32_t program( uint32_t *address, uint32_t *buffer )	// size is 256 bytes
 	{
 		eraseSector( 7 ) ;
 	}
+	if ( (uint32_t) address == 0x08080000 )
+	{
+		eraseSector( 8 ) ;
+	}
+	if ( (uint32_t) address == 0x080A0000 )
+	{
+		eraseSector( 9 ) ;
+	}
+	if ( (uint32_t) address == 0x080C0000 )
+	{
+		eraseSector( 10 ) ;
+	}
+	if ( (uint32_t) address == 0x080E0000 )
+	{
+		eraseSector( 11 ) ;
+	}
 
 	// Now program the 256 bytes
 	 
@@ -746,21 +824,22 @@ uint8_t flashFile( uint32_t index )
 	if ( Valid == 2 )
 	{
 	  lcd_puts_Pleft( 3*FH,"NOT A VALID FIRMWARE") ;
-#ifdef PCBX9D
+#ifdef WIDE_DISPLAY
 	  lcd_puts_Pleft( 6*FH,"\015[EXIT]") ;
 #else
 	  lcd_puts_Pleft( 6*FH,"\007[EXIT]") ;
 #endif
 		uint8_t event = getEvent() ;
-		if ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) )
+		if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
 		{
+			killEvents( event ) ;
 			return 3 ;
 		}
 		return 4 ;		// 
 	}
 	lcd_putsn_P( 0, 2*FH, Filenames[index], DISPLAY_CHAR_WIDTH ) ;
 
-#ifdef PCBX9D
+#ifdef WIDE_DISPLAY
   lcd_puts_Pleft( 6*FH,"\010[ENTER]\021[EXIT]") ;
   lcd_puts_Pleft( 5*FH,"\010YES\021NO") ;
 #else
@@ -770,7 +849,11 @@ uint8_t flashFile( uint32_t index )
 	
 	uint8_t event = getEvent() ;
 
+#ifdef PCBSKY
+	if ( ( event == EVT_KEY_LONG(BOOT_KEY_MENU) ) || ( event==EVT_KEY_BREAK(BTN_RE) ) )
+#else
 	if ( event == EVT_KEY_LONG(BOOT_KEY_MENU) )
+#endif
 	{
 		fr = openFirmwareFile( index ) ;
 		FirmwareSize = FileSize[index] ; 
@@ -780,8 +863,9 @@ uint8_t flashFile( uint32_t index )
 		}
 		return 2 ;
 	}
-	if ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) )
+	if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
 	{
+		killEvents( event ) ;
 		return 1 ;
 	}
 	return 0 ;
@@ -838,6 +922,45 @@ extern uint32_t Breason ;
 
 //#endif
 
+#ifdef PCB9XT
+static void initWatchdog()
+{
+	IWDG->KR = 0x5555 ;		// Unlock registers
+	IWDG->PR = 3 ;				// Divide by 32 => 1kHz clock
+	IWDG->KR = 0x5555 ;		// Unlock registers
+	IWDG->RLR = 1000 ;			// 1.0 seconds nominal
+	IWDG->KR = 0xAAAA ;		// reload
+	IWDG->KR = 0xCCCC ;		// start
+}
+#endif
+
+#ifdef PCBX7
+void ledOff()
+{
+  GPIO_ResetBits(LED_RED_GPIO, LED_RED_GPIO_PIN);
+  GPIO_ResetBits(LED_BLUE_GPIO, LED_BLUE_GPIO_PIN);
+  GPIO_ResetBits(LED_GREEN_GPIO, LED_GREEN_GPIO_PIN);
+}
+
+void ledRed()
+{
+  ledOff();
+  GPIO_SetBits(LED_RED_GPIO, LED_RED_GPIO_PIN);
+}
+
+void ledGreen()
+{
+  ledOff();
+  GPIO_SetBits(LED_GREEN_GPIO, LED_GREEN_GPIO_PIN);
+}
+
+void ledBlue()
+{
+  ledOff();
+  GPIO_SetBits(LED_BLUE_GPIO, LED_BLUE_GPIO_PIN);
+}
+#endif // PCBX7
+
 int main()
 {
 	uint32_t i ;
@@ -876,17 +999,35 @@ int main()
 #endif
 
 #ifdef PCBSKY
+  PMC->PMC_PCER0 = (1<<ID_PIOC)|(1<<ID_PIOB)|(1<<ID_PIOA) ;				// Enable clocks to PIOB and PIOA and PIOC
 	MATRIX->CCFG_SYSIO |= 0x000000F0L ;		// Disable syspins, enable B4,5,6,7
 #endif
 
 #ifdef PCBSKY
- #ifdef REVX
-	createFat( 512 ) ;
- #else
-	createFat( 256 ) ;
- #endif
-#else
-	createFat( 512 ) ;
+	ChipId = CHIPID->CHIPID_CIDR ;
+
+	uint32_t x = ChipId & 0x00000F00 ;
+	if ( x <= 0x00000900 )
+	{
+		createFat( 256 ) ;
+	}
+	else
+	{
+		createFat( 512 ) ;
+	}
+
+	if ( ChipId & 0x0080 )
+	{
+		EFC->EEFC_FMR = (EFC->EEFC_FMR & 0x00000F00) | (6 << 8) ;
+	}
+
+// #ifdef REVX
+//	createFat( 512 ) ;
+// #else
+//	createFat( 256 ) ;
+// #endif
+//#else
+//	createFat( 512 ) ;
 #endif
 
 #ifdef PCBSKY
@@ -894,6 +1035,11 @@ int main()
 	PIOC->PIO_PER = PIO_PC25 ;		// Enable bit C25 (USB-detect)
 	start_timer0() ;
 #endif
+
+#ifdef PCBX7
+	init_hw_timer()	;
+	__enable_irq() ;
+#endif // PCBX7
 
 	lcd_init() ;
 
@@ -903,7 +1049,11 @@ extern uint8_t OptrexDisplay ;
 #endif
 	lcd_clear() ;
 #ifdef PCBX9D
+ #ifdef PCBX7
+	lcd_puts_Pleft( 0, "Boot Loader" ) ;
+ #else
 	lcd_puts_Pleft( 0, "\006Boot Loader" ) ;
+ #endif
 #endif
 	refreshDisplay() ;
 #ifdef PCBSKY
@@ -915,7 +1065,9 @@ extern uint8_t OptrexDisplay ;
 	init_keys() ;
 	setup_switches() ;
 	I2C_EE_Init() ;
+ #ifndef PCBX7
 	init_hw_timer()	;
+ #endif // PCBX7
 #endif
 
 #ifdef PCB9XT
@@ -924,7 +1076,9 @@ extern uint8_t OptrexDisplay ;
 	init_hw_timer()	;
 #endif
 
+ #ifndef PCBX7
 	__enable_irq() ;
+ #endif // PCBX7
 
 #ifdef PCB9XT
 	BlSetColour( 50, 2 ) ;	
@@ -962,12 +1116,39 @@ extern uint8_t OptrexDisplay ;
 #else
 	configure_pins( GPIO_Pin_CP, PIN_PORTD | PIN_INPUT | PIN_PULLUP ) ;
 #endif
+#ifdef P9XT_DEBUG
+	i = 10 ;
+	do
+	{
+		if ( Tenms )
+		{
+	    wdt_reset() ;  // Retrigger hardware watchdog
+			Tenms = 0 ;
+			i -= 1 ;
+		}
+	} while ( i ) ;
+	BlSetColour( 50, 3 ) ;
+#endif
+	
 	disk_initialize( 0 ) ;
 	sdInit() ;
 	unlockFlash() ;
 
   usbInit() ;
   usbStart() ;
+#ifdef P9XT_DEBUG
+	i = 10 ;
+	do
+	{
+		if ( Tenms )
+		{
+	    wdt_reset() ;  // Retrigger hardware watchdog
+			Tenms = 0 ;
+			i -= 1 ;
+		}
+	} while ( i ) ;
+	BlSetColour( 0, 2 ) ;
+#endif
 #endif
 
 #ifdef PCB9XT
@@ -981,7 +1162,41 @@ extern uint8_t OptrexDisplay ;
 			i -= 1 ;
 		}
 	} while ( i ) ;
+	initWatchdog() ;
 #endif
+
+//#ifdef PCBX7
+//	i = 40 ;
+//	do
+//	{
+//		if ( Tenms )
+//		{
+//	    wdt_reset() ;  // Retrigger hardware watchdog
+//			Tenms = 0 ;
+//			i -= 1 ;
+//		}
+//	} while ( i ) ;
+//	lcd_init() ;
+//#endif
+
+#ifdef REV9E
+	init_rotary_encoder() ;
+#endif
+#ifdef PCBX7
+	init_rotary_encoder() ;
+#endif // PCBX7
+#ifdef PCBSKY
+	init_rotary_encoder() ;
+//	PIOB->PUER = 0x40 ;
+#endif
+	
+
+//#ifdef PCBSKY
+//	if ( PIOB->PIO_PUSR & 0x40 )
+//	{
+//		PIOB->PIO_PUER = 0x40 ;
+//	}
+//#endif
 
 	for(;;)
 	{
@@ -997,7 +1212,9 @@ extern uint8_t OptrexDisplay ;
 #ifdef PCB9XT
 	checkM64() ;
 #endif
-
+#if defined(REV9E) || defined(PCBX7) || defined(PCBSKY)
+		checkRotaryEncoder() ;
+#endif
 
 		if ( Tenms )
 		{
@@ -1015,28 +1232,15 @@ extern uint8_t OptrexDisplay ;
 
 			Tenms = 0 ;
 			lcd_clear() ;
-#if ( defined(PCBSKY) || defined(PCB9XT) )
-			lcd_puts_Pleft( 0, "Boot Loader V ." ) ;
-			lcd_putc( 13*FW, 0, Version[4] ) ;
-			lcd_putc( 15*FW-2, 0, Version[5] ) ;
 
-//extern uint8_t StartStopCounter ;
-//extern uint16_t ReadCounter ;
-//	lcd_outhex4( 0, FH, StartStopCounter ) ;
-//	lcd_outhex4( 25, FH, ReadCounter ) ;
-//	lcd_outhex4( 50, FH, statuses ) ;
-//	lcd_outhex4( 75, FH, WriteCounter ) ;
-
-#endif
-#ifdef PCBX9D
+#ifdef WIDE_DISPLAY
 			lcd_puts_Pleft( 0, "\006Boot Loader V ." ) ;
 			lcd_putc( 19*FW, 0, Version[4] ) ;
 			lcd_putc( 21*FW-2, 0, Version[5] ) ;
-//extern uint8_t StartStopCounter ;
-//extern uint16_t ReadCounter ;
-//	lcd_outhex4( 0, FH, StartStopCounter ) ;
-//	lcd_outhex4( 25, FH, ReadCounter ) ;
-			
+#else
+			lcd_puts_Pleft( 0, "Boot Loader V ." ) ;
+			lcd_putc( 13*FW, 0, Version[4] ) ;
+			lcd_putc( 15*FW-2, 0, Version[5] ) ;
 #endif
 	 
 			if ( SDcardDisabled )
@@ -1050,12 +1254,24 @@ extern uint8_t OptrexDisplay ;
 			if ( sd_card_ready() )
 			{
 
-#if ( defined(PCBSKY) || defined(PCB9XT) )
+#ifdef WIDE_DISPLAY
+ 				lcd_puts_P( 22*FW-1, 0, "Ready" ) ;
+#else
 				lcd_puts_P( 16*FW-1, 0, "Ready" ) ;
 #endif
-#ifdef PCBX9D
-				lcd_puts_P( 22*FW-1, 0, "Ready" ) ;
-#endif
+
+//#ifdef REV9E
+//	lcd_outhex4( 0, 0, GPIOD->IDR ) ;
+//	lcd_outhex4( 0, 8, GPIOF->IDR ) ;
+//#ifdef PCBSKY
+//extern uint8_t LastEvt ;
+//	lcd_outhex4( 12*FW, FH, LastEvt ) ;
+//	lcd_outhex4( 17*FW, FH, PIOB->PIO_PDSR & 0x40 ) ;
+//	lcd_outhex4( 7*FW, FH, PIOB->PIO_PUSR ) ;
+//	lcd_outhex4( 2*FW, FH, PIOB->PIO_PPDSR ) ;
+//#endif
+//#endif
+
 
 #ifdef PCBSKY
 				statuses = usbLunStat() ;
@@ -1072,11 +1288,11 @@ extern uint8_t OptrexDisplay ;
 				
 				if ( state == ST_USB )
 				{
-#if ( defined(PCBSKY) || defined(PCB9XT) )
-					lcd_puts_Pleft( 3*FH, "\004Connecting.." ) ;
-#endif
-#ifdef PCBX9D
+
+#ifdef WIDE_DISPLAY
 					lcd_puts_Pleft( 3*FH, "\012Connecting.." ) ;
+#else
+					lcd_puts_Pleft( 3*FH, "\004Connecting.." ) ;
 #endif
 					if ( usbPlugged() == 0 )
 					{
@@ -1087,6 +1303,7 @@ extern uint8_t OptrexDisplay ;
 					lcd_putc( 6, 6*FH, '0' + FlashBlocked ) ;
 					lcd_putc( 0, 7*FH, 'E' ) ;
 					lcd_putc( 6, 7*FH, '0' + EepromBlocked ) ;
+					lcd_outhex4(15, 7*FH, LastResult ) ;
 #endif
 				}
 				
@@ -1118,11 +1335,10 @@ extern uint8_t OptrexDisplay ;
 				if ( state == ST_DIR_CHECK )
 				{
 					uint8_t event = getEvent() ;
-#if ( defined(PCBSKY) || defined(PCB9XT) )
-					lcd_puts_Pleft( 16, "\002No Firmware Files" ) ;
-#endif
-#ifdef PCBX9D
+#ifdef WIDE_DISPLAY
 					lcd_puts_Pleft( 16, "\010No Firmware Files" ) ;
+#else
+					lcd_puts_Pleft( 16, "\002No Firmware Files" ) ;
 #endif
 					if ( event == EVT_KEY_REPT( KEY_TRN ) )
 					{
@@ -1180,6 +1396,8 @@ extern uint8_t OptrexDisplay ;
 					}
 					{
 						uint8_t event = getEvent() ;
+#ifdef PCBSKY
+#endif
 						if ( event == EVT_KEY_FIRST( KEY_TRN ) )
 						{
 							SDcardDisabled = SDcardDisabled ? 0 : 1;
@@ -1229,13 +1447,18 @@ extern uint8_t OptrexDisplay ;
 								hpos -= 1 ;								
 							}
 						}
+#ifdef PCBSKY
+						if ( ( event == EVT_KEY_LONG(BOOT_KEY_MENU) ) || ( event==EVT_KEY_BREAK(BTN_RE) ) )
+#else
 						if ( event == EVT_KEY_LONG(BOOT_KEY_MENU) )
+#endif
 						{
 							// Select file to flash
+							event = 0 ;
 							state = ST_FLASH_CHECK ;
 							Valid = 0 ;
 						}
-						if ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) )
+						if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
 						{
 							state = ST_REBOOT ;
 						}
@@ -1274,17 +1497,42 @@ extern uint8_t OptrexDisplay ;
 					lcd_puts_Pleft( 3*FH, "Flashing" ) ;
 					while ( BlockCount )
 					{
+#ifdef PCBSKY
+						uint32_t result ;
+						result = program( (uint32_t *)firmwareAddress, &Block_buffer[blockOffset] ) ;	// size is 256 bytes
+						LastResult = result ;
+#else
 						program( (uint32_t *)firmwareAddress, &Block_buffer[blockOffset] ) ;	// size is 256 bytes
-						blockOffset += 64 ;		// 32-bit words (256 bytes)
-						firmwareAddress += 256 ;
-						if ( BlockCount > 256 )
+#endif
+#ifdef PCBSKY
+						if ( ChipId & 0x0080 )
 						{
-							BlockCount -= 256 ;							
+							blockOffset += 128 ;		// 32-bit words (512 bytes)
+							firmwareAddress += 512 ;
+							if ( BlockCount > 512 )
+							{
+								BlockCount -= 512 ;							
+							}
+							else
+							{
+								BlockCount = 0 ;
+							}
 						}
 						else
+#endif
 						{
-							BlockCount = 0 ;
+							blockOffset += 64 ;		// 32-bit words (256 bytes)
+							firmwareAddress += 256 ;
+							if ( BlockCount > 256 )
+							{
+								BlockCount -= 256 ;							
+							}
+							else
+							{
+								BlockCount = 0 ;
+							}
 						}
+
 					}
 					firmwareWritten += 1 ;
 					uint32_t width = FirmwareSize / 4096 ;
@@ -1309,8 +1557,9 @@ extern uint8_t OptrexDisplay ;
 				{
 					uint8_t event = getEvent() ;
 					lcd_puts_Pleft( 3*FH, "Flashing Complete" ) ;
-					if ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) )
+					if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
 					{
+						killEvents( event ) ;
 						state = ST_FILE_LIST ;
 					}
 				}
@@ -1348,6 +1597,10 @@ extern uint8_t OptrexDisplay ;
 		{
 			if ( check_soft_power() == POWER_OFF )
 			{
+#ifdef PCBX7
+extern void lcdOff() ;				
+				lcdOff() ;
+#endif // PCBX7
 				soft_power_off() ;
 				for(;;)
 				{
@@ -1357,13 +1610,15 @@ extern uint8_t OptrexDisplay ;
 		}
 		if ( state < ST_FILE_LIST )
 		{
-			if ( getEvent() == EVT_KEY_LONG(BOOT_KEY_EXIT) )
+			uint8_t event = getEvent() ;
+			if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
 			{
 				state = ST_REBOOT ;
 			}
 		}
 		if ( state == ST_REBOOT )
 		{
+	 		wdt_reset() ;
 			if ( (~read_keys() & 0x7E) == 0 )
 			{
 		  	NVIC_SystemReset() ;

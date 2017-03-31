@@ -405,11 +405,28 @@ uint8_t LcdInputs ;
 
 #ifdef PCBSKY
 
+uint8_t ErcLcd = 0 ;
+
 const static uint8_t Lcdinit[] =
 {
 	0xe2, 0xae, 0xa1, 0xA6, 0xA4, 0xA2, 0xC0, 0x2F, 0x25, 0x81, 0x22, 0xAF
 } ;	
 
+const static uint8_t Lcd_ERC12864_2[] =
+{
+   0xe2, //Initialize the internal functions
+   0xae, //DON = 0: display OFF
+   0xa1, //ADC = 1: reverse direction(SEG132->SEG1)
+   0xA6, //REV = 0: non-reverse display
+   0xA4, //EON = 0: normal display. non-entire
+   0xA3, // Select LCD bias=0
+   0xC0, //SHL = 0: normal direction (COM1->COM64)
+   0x2F, //Control power circuit operation VC=VR=VF=1
+   0x27, //Select int resistance ratio R2 R1 R0 =5
+   0x81, //Set reference voltage Mode
+   0x2D, // 24 SV5 SV4 SV3 SV2 SV1 SV0 = 0x18
+   0xAF  //DON = 1: display ON
+} ;
 
 void lcd_init()
 {
@@ -419,7 +436,6 @@ void lcd_init()
   // ~/txt/flieger/ST7565RV17.pdf  from http://www.glyn.de/content.asp?wdid=132&sid=
 
 
-	configure_pins( LCD_A0, PIN_ENABLE | PIN_LOW | PIN_OUTPUT | PIN_PORTA | PIN_NO_PULLUP ) ;
 
 // read the inputs, and lock the LCD lines
 	LcdInputs = PIOC->PIO_PDSR << 1 ; // 6 LEFT, 5 RIGHT, 4 DOWN, 3 UP ()
@@ -452,11 +468,17 @@ void lcd_init()
 	pioptr->PIO_OWER = 0x000000FFL ;		// Allow write to ls 8 bits in ODSR
 
 	pioptr->PIO_CODR = LCD_RES ;		// Reset LCD
+	configure_pins( LCD_A0, PIN_ENABLE | PIN_INPUT | PIN_PORTA | PIN_PULLUP ) ;
 	TC0->TC_CHANNEL[0].TC_CCR = 5 ;	// Enable clock and trigger it (may only need trigger)
 	while ( TC0->TC_CHANNEL[0].TC_CV < 200 )		// >10 uS, Value depends on MCK/2 (used 18MHz)
 	{
 		// Wait
 	}
+  if ( ( PIOA->PIO_PDSR & LCD_A0 ) == 0 )
+	{
+		ErcLcd = 1 ;
+	}	 
+	configure_pins( LCD_A0, PIN_ENABLE | PIN_LOW | PIN_OUTPUT | PIN_PORTA | PIN_NO_PULLUP ) ;
 	pioptr->PIO_SODR = LCD_RES ;		// Remove LCD reset
 	TC0->TC_CHANNEL[0].TC_CCR = 5 ;	// Enable clock and trigger it (may only need trigger)
 	while ( TC0->TC_CHANNEL[0].TC_CV < 27000 )	// 1500 uS, Value depends on MCK/2 (used 18MHz)
@@ -465,7 +487,7 @@ void lcd_init()
 	}
 	for ( i = 0 ; i < 12 ; i += 1 )
 	{
-	  lcdSendCtl( Lcdinit[i] ) ;
+	  lcdSendCtl( ErcLcd ? Lcd_ERC12864_2[i] : Lcdinit[i] ) ;
 	}
 
 	pioptr->PIO_ODR = 0x0000003AL ;		// Set bits 1, 3, 4, 5 input

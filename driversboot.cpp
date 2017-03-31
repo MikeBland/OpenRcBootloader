@@ -24,6 +24,7 @@
 #ifdef PCBSKY
 #include "radio.h"
 #include "drivers.h"
+#include "AT91SAM3S4.h"
 #endif
 
 
@@ -57,13 +58,190 @@ void b_putEvent( uint8_t evt)
   s_evt = evt;
 }
 
+#ifdef PCBSKY
+volatile int32_t Rotary_position ;
+volatile int32_t Rotary_count ;
+int32_t LastRotaryValue ;
+int32_t Rotary_diff ;
+
+void init_rotary_encoder()
+{
+//  register uint32_t dummy;
+
+	configure_pins( PIO_PC19 | PIO_PC21, PIN_ENABLE | PIN_INPUT | PIN_PORTC | PIN_PULLUP ) ;	// 19 and 21 are rotary encoder
+	configure_pins( PIO_PB6, PIN_ENABLE | PIN_INPUT | PIN_PORTB | PIN_PULLUP ) ;		// rotary encoder switch
+//	PIOC->PIO_IER = PIO_PC19 | PIO_PC21 ;
+//	dummy = PIOC->PIO_PDSR ;		// Read Rotary encoder (PC19, PC21)
+//	dummy >>= 19 ;
+//	dummy &= 0x05 ;			// pick out the three bits
+//	Rotary_position &= ~0x45 ;
+//	Rotary_position |= dummy ;
+//	NVIC_SetPriority( PIOC_IRQn, 1 ) ; // Lower priority interrupt
+//	NVIC_EnableIRQ(PIOC_IRQn) ;
+//	LastRotaryValue = Rotary_count ;
+}
+
+void checkRotaryEncoder()
+{
+  register uint32_t dummy ;
+	
+	dummy = PIOC->PIO_PDSR ;		// Read Rotary encoder (PC19, PC21)
+	dummy >>= 19 ;
+	dummy &= 0x05 ;			// pick out the three bits
+	if ( dummy != ( Rotary_position & 0x05 ) )
+	{
+		if ( ( Rotary_position & 0x01 ) ^ ( ( dummy & 0x04) >> 2 ) )
+		{
+			Rotary_count -= 1 ;
+		}
+		else
+		{
+			Rotary_count += 1 ;
+		}
+		Rotary_position &= ~0x45 ;
+		Rotary_position |= dummy ;
+	}
+}
+
+#endif
+
+#if (defined(REV9E) || defined(PCBX7))
+
+volatile int32_t Rotary_position ;
+volatile int32_t Rotary_count ;
+int32_t LastRotaryValue ;
+int32_t Rotary_diff ;
+
+#ifdef PCBX7
+void init_rotary_encoder()
+{
+	configure_pins( 0x0A00, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+//	g_eeGeneral.rotaryDivisor = 2 ;
+}
+
+void checkRotaryEncoder()
+{
+  register uint32_t dummy ;
+	
+	dummy = GPIOENCODER->IDR ;	// Read Rotary encoder ( PE11, PE9 )
+	dummy >>= 9 ;
+	dummy = (dummy & 1) | ( ( dummy >> 1 ) & 2 ) ;	// pick out the two bits
+	if ( dummy != ( Rotary_position & 0x03 ) )
+	{
+		if ( ( Rotary_position & 0x01 ) ^ ( ( dummy & 0x02) >> 1 ) )
+		{
+			Rotary_count -= 1 ;
+		}
+		else
+		{
+			Rotary_count += 1 ;
+		}
+		Rotary_position &= ~0x03 ;
+		Rotary_position |= dummy ;
+	}
+}
+#else // PCBX7
+
+void init_rotary_encoder()
+{
+//	configure_pins( 0x0060, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+	configure_pins( 0x3000, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+//	g_eeGeneral.rotaryDivisor = 2 ;
+}
+
+void checkRotaryEncoder()
+{
+  register uint32_t dummy ;
+	
+	dummy = GPIOENCODER->IDR ;	// Read Rotary encoder ( PE6, PE5 )
+//	dummy >>= 5 ;
+	dummy >>= 12 ;
+	dummy &= 0x03 ;			// pick out the two bits
+	if ( dummy != ( Rotary_position & 0x03 ) )
+	{
+		if ( ( Rotary_position & 0x01 ) ^ ( ( dummy & 0x02) >> 1 ) )
+		{
+			Rotary_count -= 1 ;
+//			Rotary_count += 1 ;
+		}
+		else
+		{
+			Rotary_count += 1 ;
+//			Rotary_count -= 1 ;
+		}
+		Rotary_position &= ~0x03 ;
+		Rotary_position |= dummy ;
+	}
+}
+#endif // PCBX7
+
+uint8_t LastEvt ;
 
 uint8_t getEvent()
 {
   register uint8_t evt = s_evt;
   s_evt=0;
-   return evt;
+	checkRotaryEncoder() ;
+	{
+		int32_t x ;
+		x = Rotary_count >> 1 ;
+		Rotary_diff = x - LastRotaryValue ;
+		LastRotaryValue = x ;
+	}
+	if ( evt == 0 )
+	{
+extern int32_t Rotary_diff ;
+		if ( Rotary_diff > 0 )
+		{
+			evt = EVT_KEY_FIRST(KEY_MINUS) ;
+		}
+		else if ( Rotary_diff < 0 )
+		{
+			evt = EVT_KEY_FIRST(KEY_PLUS) ;
+		}
+		Rotary_diff = 0 ;
+	}
+	if ( evt != 0 )
+	{
+		LastEvt = evt ;
+	}
+  return evt;
 }
+
+#else
+uint8_t LastEvt ;
+uint8_t getEvent()
+{
+  register uint8_t evt = s_evt;
+  s_evt=0;
+#ifdef PCBSKY
+	{
+		int32_t x ;
+		x = Rotary_count >> 2 ;
+		Rotary_diff = x - LastRotaryValue ;
+		LastRotaryValue = x ;
+	}
+	if ( evt == 0 )
+	{
+extern int32_t Rotary_diff ;
+		if ( Rotary_diff > 0 )
+		{
+			evt = EVT_KEY_FIRST(KEY_DOWN) ;
+		}
+		else if ( Rotary_diff < 0 )
+		{
+			evt = EVT_KEY_FIRST(KEY_UP) ;
+		}
+		Rotary_diff = 0 ;
+	}
+	if ( evt != 0 )
+	{
+		LastEvt = evt ;
+	}
+#endif
+	return evt;
+}
+#endif
 
 Key keys[NUM_KEYS] ;
 
@@ -208,6 +386,13 @@ extern uint32_t readTrainerSwitch( void ) ;
     keys[enuk].input(value,(EnumKeys)enuk);
     ++enuk;
   }
+
+#ifdef PCBSKY
+//	checkRotaryEncoder() ;
+	uint8_t value = ~PIOB->PIO_PDSR & 0x40 ;
+	keys[BTN_RE].input( value,(EnumKeys)BTN_RE); // Rotary Enc. Switch
+#endif
+
 }
 
 #ifdef PCB9XT
@@ -556,21 +741,15 @@ void backlightSet( uint32_t value )
 	*blptr = 40 ;
 }
 
-uint16_t BlDebug0 ;
-uint16_t BlDebug1 ;
-uint16_t BlDebug2 ;
-uint16_t BlDebug3 ;
 
 // Level is 0 to 100%
 // colour is 0 red, 1 green, 2 blue
 void BlSetColour( uint32_t level, uint32_t colour )
 {
-	BlDebug0 += 1 ;
 	if ( colour > 3 )
 	{
 		return ;
 	}
-	BlDebug1 += 1 ;
 	level *= 255 ;
 	level /= 100 ;
 	if ( level > 255 )
@@ -604,7 +783,6 @@ extern uint32_t Timer_mult1 ;
 
 void backlightSend()
 {
-	BlDebug2 += 1 ;
 	BlChanged = 0 ;
 	
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ;           // Enable portB clock
@@ -615,8 +793,8 @@ void backlightSend()
 
   TIM4->CR1 &= ~TIM_CR1_CEN ;
 	TIM4->PSC = (Peri1_frequency*Timer_mult1) / 10000000 - 1 ;		// 0.1uS
-  TIM4->ARR = 24 ;             // 2.5uS
-  TIM4->CCR1 = 19 ;            // Update time
+  TIM4->ARR = 12 ;             // 1.3uS
+  TIM4->CCR1 = 9 ;            // Update time
 	TIM4->CCER = TIM_CCER_CC4E ;
 	TIM4->CNT = 65536-710 ;
   TIM4->CCR4 = BlData[0] ;		// Past end
@@ -642,7 +820,6 @@ void backlightSend()
 
 extern "C" void DMA1_Stream0_IRQHandler()
 {
-	BlDebug3 += 1 ;
 	if ( --BlCount )
 	{
 		backlightSend() ;

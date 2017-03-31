@@ -1057,11 +1057,7 @@ DRESULT disk_ioctl (
             break ;
 
             case GET_SECTOR_COUNT : /* Get number of sectors on the disk (DWORD) */
-#ifdef REVX
-							 *(DWORD*)buff = (DWORD)2051 ;
-#else
-							 *(DWORD*)buff = (DWORD)1539 ;
-#endif
+							 *(DWORD*)buff = (DWORD)(BlockLimit + 3) ;
                res = RES_OK;
              break;
 

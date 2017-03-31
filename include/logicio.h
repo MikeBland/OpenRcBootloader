@@ -49,6 +49,7 @@
 #define PIN_PORTC				0x0200
 #define PIN_PORTD				0x0300
 #define PIN_PORTE				0x0400
+#define PIN_PORTF				0x0500
 #define PIN_LOW					0x0000
 #define PIN_HIGH				0x1000
 #define PIN_SPEED_MASK	0x6000
