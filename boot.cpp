@@ -107,7 +107,7 @@ __attribute__ ((section(".version"), used))
 // Temp edit to force a push
 const uint8_t Version[] =
 {
-	'B', 'O', 'O', 'T', '2', '4'
+	'B', 'O', 'O', 'T', '2', '5'
 } ;
 
 __attribute__ ((section(".text"), used))
@@ -152,17 +152,30 @@ void createFat( uint32_t flashSize ) ;
 #define BOOT_KEY_MENU		KEY_MENU
 #define BOOT_KEY_EXIT		KEY_EXIT
 #else
+#ifdef PCBX7
 #define BOOT_KEY_UP			KEY_PLUS
 #define BOOT_KEY_DOWN		KEY_MINUS
 #define BOOT_KEY_LEFT		KEY_MENU
 #define BOOT_KEY_RIGHT	KEY_PAGE
 #define BOOT_KEY_MENU		KEY_ENTER
 #define BOOT_KEY_EXIT		KEY_EXIT
+#else
+#define BOOT_KEY_UP			KEY_MENU
+#define BOOT_KEY_DOWN		KEY_EXIT
+#define BOOT_KEY_LEFT		KEY_PAGE
+#define BOOT_KEY_RIGHT	KEY_MINUS
+#define BOOT_KEY_MENU		KEY_PLUS
+#define BOOT_KEY_EXIT		KEY_ENTER
+#endif
 #endif
 #ifdef PCBX7
 #define DISPLAY_CHAR_WIDTH	21
 #else // PCBX7
+#ifdef REV9E
 #define DISPLAY_CHAR_WIDTH	35
+#else
+#define DISPLAY_CHAR_WIDTH	31
+#endif
 #endif // PCBX7
 #endif
 
