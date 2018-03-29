@@ -37,8 +37,16 @@
 #endif
 
 
+#ifndef PCBX12D
 #ifndef SIMU
 #include "core_cm3.h"
+#endif
+#endif
+
+#ifdef PCBX12D
+#include "stm32f4xx.h"
+#include "core_cm4.h"
+#include "radio.h"
 #endif
 
 #include "logicio.h"

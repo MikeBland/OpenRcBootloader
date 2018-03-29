@@ -261,6 +261,11 @@ static void lowLevelUsbCheck( void )
  *        Exported functions
  *----------------------------------------------------------------------------*/
 
+void __set_MSP(uint32_t topOfMainStack)
+{
+  __asm("msr msp, r0");
+}
+
 /*----------------------------------------------------------------------------*/
 /**
  * \brief Performs the low-level initialization of the chip. This includes EFC,
@@ -269,8 +274,10 @@ static void lowLevelUsbCheck( void )
 /*----------------------------------------------------------------------------*/
 uint32_t SystemInit (void)
 {
+#ifndef APP
 #ifdef BOOT
 	lowLevelUsbCheck() ;
+#endif
 #endif
     /** Set 2 cycle (1 WS) for Embedded Flash Access */
 		// Max clock is 38 MHz (1.8V VVDCORE)

@@ -51,6 +51,7 @@ MEMORY
 {
    FLASH (rx)  : ORIGIN = 0x00400000, LENGTH = 256K
    RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 48K
+   RAMH  (rwx) : ORIGIN = 0x20008000, LENGTH = 16K
 }
 
 
@@ -114,7 +115,7 @@ SECTIONS
       *(.fastrun.*)
       
       . = ALIGN(4);        /* Align the end of the section */
-   } > RAM
+   } > RAMH
    _edata = .;             /* Provide the name for the end of this section */
    
 
@@ -131,9 +132,16 @@ SECTIONS
       *(.bss.*)
       
       . = ALIGN(4);        /* Align the end of the section */
-   } > RAM = 0
+   } > RAMH = 0
    _ebss = .;              /* Provide the name for the end of this section */
-   
+
+  .overlaydata (NOLOAD) :
+  {
+    *(.overlaydata)
+    *(.overlaydata*)
+    *(.overlaydata_rodata)
+    *(.overlaydata_rodata*)
+  } >RAM
    
    /* 
     * The ".stack" section is our stack.

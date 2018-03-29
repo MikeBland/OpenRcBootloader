@@ -234,6 +234,13 @@ void SysTick_CLKSourceConfig(uint32_t SysTick_CLKSource)
   }
 }
 
+void __set_MSP(uint32_t topOfMainStack)
+{
+  __asm("msr msp, r0");
+}
+
+
+
 /**
   * @}
   */

@@ -54,8 +54,8 @@ extern unsigned char MEDSdcard_Initialize(Media *media, unsigned char mciID);
 #define MSD_BUFFER_SIZE     (12*BLOCK_SIZE)
 
 /** LUN read/write buffer. */
-unsigned char msdBuffer1[MSD_BUFFER_SIZE];
-unsigned char msdBuffer2[MSD_BUFFER_SIZE];
+unsigned char msdBuffer1[MSD_BUFFER_SIZE] __attribute__((section(".overlaydata"), aligned(32))) ;
+unsigned char msdBuffer2[MSD_BUFFER_SIZE] __attribute__((section(".overlaydata"), aligned(32))) ;
 
 unsigned int msdReadTotal=0, msdWriteTotal=0;
 

@@ -56,7 +56,11 @@ uint8_t DisplayBuf[DISPLAY_W*DISPLAY_H/8] ;
 #define DISPLAY_END (DisplayBuf+sizeof(DisplayBuf))
 
 #ifdef PCBX9D
+#ifdef PCBX7
+#define X9D_OFFSET		0
+#else
 #define X9D_OFFSET		11
+#endif
 #define DISPLAY_START (DisplayBuf + X9D_OFFSET)
 #else
 #define DISPLAY_START (DisplayBuf + 0)
@@ -247,6 +251,19 @@ void lcd_puts_P( uint8_t x, uint8_t y, const char *s )
   lcd_putsAtt( x, y, s, 0);
 }
 
+#ifdef APP
+// Puts sub-string from string options
+// First byte of string is sub-string length
+// idx is index into string (in length units)
+// Output length characters
+void lcd_putsAttIdx(uint8_t x,uint8_t y,const char * s,uint8_t idx,uint8_t att)
+{
+	uint8_t length ;
+	length = *s++ ;
+
+  lcd_putsnAtt(x,y,s+length*idx,length,att) ;
+}
+#endif
 
 void lcd_outhex4(uint8_t x,uint8_t y,uint16_t val)
 {

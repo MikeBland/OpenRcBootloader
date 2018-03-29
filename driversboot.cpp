@@ -313,7 +313,11 @@ void Key::input(bool val, EnumKeys enuk)
   }
 }
 
+#ifdef APP
+void pauseEvents(uint8_t event)
+#else
 void b_pauseEvents(uint8_t event)
+#endif
 {
   event=event & EVT_KEY_MASK;
   if(event < (int)DIM(keys))  keys[event].pauseEvents();
@@ -324,6 +328,23 @@ void killEvents(uint8_t event)
   event=event & EVT_KEY_MASK;
   if(event < (int)DIM(keys))  keys[event].killEvents();
 }
+
+#ifdef APP
+uint8_t menuPressed()
+{
+	if ( keys[KEY_MENU].isKilled() )
+	{
+		return 0 ;
+	}
+	return ( read_keys() & 2 ) == 0 ;
+}
+
+uint32_t keyState(EnumKeys enuk)
+{
+  if(enuk < (int)DIM(keys))  return keys[enuk].state() ? 1 : 0 ;
+	return 0 ;
+}
+#endif
 
 void per10ms()
 {

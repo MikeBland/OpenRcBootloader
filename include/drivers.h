@@ -20,7 +20,15 @@ struct t_fifo64
 	uint32_t out ;
 } ;
 
+struct t_fifo128
+{
+	uint8_t fifo[128] ;
+	uint32_t in ;
+	uint32_t out ;
+} ;
+
 extern int32_t get_fifo64( struct t_fifo64 *pfifo ) ;
+extern int32_t get_fifo128( struct t_fifo128 *pfifo ) ;
 
 
 //------------------------------------------------------------------------------
@@ -73,6 +81,9 @@ class Key
 public:
   void input(bool val, EnumKeys enuk);
   bool state()       { return m_vals==FFVAL;                }
+#ifdef APP
+	bool isKilled()    { return m_state == KSTATE_KILLED ;    }
+#endif
   void pauseEvents() { m_state = KSTATE_PAUSE;  m_cnt   = 0;}
   void killEvents()  { m_state = KSTATE_KILLED; m_dblcnt=0; }
   uint8_t getDbl()   { return m_dblcnt;                     }
@@ -83,5 +94,12 @@ extern Key keys[NUM_KEYS] ;
 #ifdef PCB9XT
 void BlSetColour( uint32_t level, uint32_t colour ) ;
 #endif
+
+// Soft Serial options
+#define SERIAL_NORM		0
+#define SERIAL_INVERT	1
+
+#define SERIAL_NO_PARITY		0
+#define SERIAL_EVEN_PARITY	1
 
 #endif

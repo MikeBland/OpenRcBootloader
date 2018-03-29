@@ -26,6 +26,9 @@ BIN  = $(CP) -O ihex
 BINX = $(CP) -O binary 
 
 # Object files directory
+ifeq ($(PCB), X12D)
+  OBJDIR = x12obj
+else
 ifeq ($(PCB), TARANIS)
  ifeq ($(REVPLUS), 1)
   OBJDIR = tpobj
@@ -55,6 +58,7 @@ else
   OBJDIR = obj
  endif
  endif
+endif
 endif
 endif
 endif
@@ -108,7 +112,11 @@ RUN_FROM_FLASH = 0
  ifeq ($(PCB), X7)
   RUN_FROM_FLASH = 0
  else
+ ifeq ($(PCB), X12D)
+  RUN_FROM_FLASH = 0
+ else
    RUN_FROM_FLASH = 1
+ endif
  endif
  endif
  endif
@@ -195,6 +203,17 @@ else
    CPPDEFS += -DPCBX9D
    FULL_PRJ = $(PROJECT)_ramBootx7
    EXTRAINCDIRS += include
+  else
+   ifeq ($(PCB), X12D)
+    ARCH = ARM
+    LDSCRIPT = stm32f4_ramBoot.ld
+    TRGT = arm-none-eabi-
+    CPPDEFS += -DHSE_VALUE=12000000
+    CPPDEFS += -DPCBX12D
+    FULL_PRJ = $(PROJECT)_ramBootx12
+    EXTRAINCDIRS += include
+    UDEFS = -DSTM32F429_439xx
+   endif
   endif
   endif
  endif
@@ -402,6 +421,56 @@ CPPSRC = lcdboot.cpp \
 # List ASM source files here
 ASRC = x9d/startup_stm32f2xx.s
 
+else
+ifeq ($(PCB), X12D)
+SRC  = X12D/system_stm32f4xx.c \
+       X12D/stm32f4xx_rcc.c \
+		 X12D/sdram_driver.c \
+		 X12D/stm32f4xx_fmc.c \
+       X12D/stm32f4xx_gpio.c \
+       X12D/misc.c
+
+#       X12D/pwr_driver.c
+
+#SRC  = X12D/system_stm32f4xx.c \
+#       X12D/stm32f4xx_spi.c \
+#       X12D/misc.c \
+#		 X12D/stm32f4xx_dma2d.c \
+#		 X12D/stm32f4xx_dma.c \
+#		 X12D/stm32f4xx_ltdc.c \
+#       X12D/stm32f4xx_sdio.c \
+#		 X12D/sdio_sd.c \
+#       X12D/usb_core.c \
+#       X12D/usb_dcd.c \
+#       X12D/usb_dcd_int.c \
+#       X12D/usbd_core.c \
+#       X12D/usbd_ioreq.c \
+#       X12D/usbd_req.c \
+#       X12D/usbd_msc_data.c \
+#       X12D/usbd_msc_scsi.c \
+#       X12D/usbd_msc_bot.c \
+#       X12D/usbd_msc_core.c \
+#       X12D/usbd_desc.c \
+#       X12D/usb_bsp.c
+
+CPPSRC = logicioboot.cpp \
+         boot.cpp
+
+#CPPSRC = X12D/lcdboot.cpp \
+#         logicioboot.cpp
+#         X12D/lcd_driver.cpp \
+#         ff.cpp \
+#         x12ddiskio.cpp \
+#         lcd_driver.cpp \
+#         X12D/hdrivers.cpp \
+#			ff_lfn.cpp \
+#         X12D/usbd_usr.cpp \
+#         X12D/led_driver.cpp \
+#         usbd_storage_msd.cpp \
+
+
+# List ASM source files here
+ASRC = X12D/startup_stm32f42_43xxx.s
 
 else
 
@@ -434,6 +503,8 @@ CPPSRC = lcdboot.cpp \
 # List ASM source files here
 ASRC =
 
+
+endif
 endif
 endif
 endif
@@ -543,14 +614,20 @@ size:
 #	arm-none-eabi-size $(FULL_PRJ).elf
 	@if test -f $(FULL_PRJ).elf; then arm-none-eabi-size $(FULL_PRJ).elf; fi
 
+$(OBJDIR):
+	test -d $(OBJDIR) || $(shell mkdir -p $(OBJDIR) )
+
 $(CPPOBJS) : $(OBJDIR)/%.o : %.cpp
+	@mkdir -p $(@D)
 	$(CC) -c $(CPPFLAGS) -fno-exceptions -I . $(INCDIR) $< -o $@
 
 $(COBJS) : $(OBJDIR)/%.o : %.c
+	@mkdir -p $(@D)
 	$(CC) -c $(CPFLAGS) -I . $(INCDIR) $< -o $@
 
 
 $(AOBJS) : $(OBJDIR)/%.o : %.s
+	@mkdir -p $(@D)
 	$(AS) -c $(ASFLAGS) $< -o $@
 
 %elf: $(AOBJS) $(COBJS) $(CPPOBJS) 

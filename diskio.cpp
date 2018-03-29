@@ -835,7 +835,9 @@ Now decide what the card can do!
 
 #ifdef BOOT
 #if !defined(SIMU)
+#ifndef APP
 #include "Fat12.cpp"
+#endif
 #endif
 #endif
 
@@ -935,6 +937,7 @@ DRESULT disk_read (
   if ( !count) return RES_PARERR ;
 
 #ifdef BOOT
+#ifndef APP
   if (drv==1)             /* EEPROM */
 	{
 		
@@ -955,6 +958,7 @@ DRESULT disk_read (
     } while ( count ) ;
 	}
   else
+#endif
 #endif
 	{
 		if (drv ) return RES_PARERR;
@@ -995,11 +999,13 @@ DRESULT disk_write (
   if ( !count) return RES_PARERR ;
 
 #ifdef BOOT
+#ifndef APP
   if (drv==1)             /* EEPROM */
 	{
 		count = fat12Write( buff, sector, count ) ;
 	}
   else
+#endif
 #endif
 	{
 		if (drv ) return RES_PARERR;
@@ -1010,8 +1016,10 @@ DRESULT disk_write (
 
     do {
       result = sd_write_block( sector, ( uint32_t *)buff ) ;
+#ifndef APP
 extern uint16_t WriteCounter ;
 WriteCounter += 1 ;
+#endif
       if (result) {
         sector += 1 ;
         buff += 512 ;
@@ -1045,6 +1053,7 @@ DRESULT disk_ioctl (
 
         res = RES_ERROR;
 #ifdef BOOT
+#ifndef APP
         if (drv==1)
 				{
           switch (ctrl)
@@ -1069,6 +1078,7 @@ DRESULT disk_ioctl (
 					}
         	return res ;
 				}
+#endif
 #endif
 
         if (drv) return RES_PARERR;
