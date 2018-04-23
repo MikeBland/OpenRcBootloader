@@ -1,0 +1,680 @@
+#
+#       !!!! Do NOT edit this makefile with an editor which replace tabs by spaces !!!!    
+#
+##############################################################################################
+# 
+# On command line:
+#
+# make all = Create project
+#
+# make clean = Clean project files.
+#
+# To rebuild project do "make clean" and "make all".
+#
+
+##############################################################################################
+# Start of default section
+#
+
+TRGT = arm-none-eabi-
+CC   = $(TRGT)gcc
+CP   = $(TRGT)objcopy
+CLSS = $(TRGT)objdump
+AS   = $(TRGT)as
+#gcc -x assembler-with-cpp
+BIN  = $(CP) -O ihex 
+BINX = $(CP) -O binary 
+
+MCU  = cortex-m3
+
+# List all default C defines here, like -D_DEBUG=1
+DDEFS =
+
+# List all default ASM defines here, like -D_DEBUG=1
+DADEFS = 
+
+# List all default directories to look for include files here
+DINCDIR = ..\
+
+# List the default directory to look for the libraries here
+DLIBDIR =
+
+# List all default libraries here
+DLIBS = 
+
+MEMORIES = sram
+
+EXT = STD
+
+#
+# End of default section
+##############################################################################################
+
+##############################################################################################
+# Start of user section
+#
+
+# 
+# Define project name and Ram/Flash mode here
+PROJECT        = ChangId
+
+RUN_FROM_FLASH = 0
+
+EXTRAINCDIRS =
+
+# Object files directory
+ifeq ($(PCB), X12D)
+  OBJDIR = ax12obj
+else
+ ifeq ($(PCB), TARANIS)
+  ifeq ($(REVPLUS), 1)
+   OBJDIR = atpobj
+  else
+   OBJDIR = atobj
+  endif
+ else
+  ifeq ($(PCB), X9D)
+   ifeq ($(REVPLUS), 1)
+    OBJDIR = axpobj
+   else
+    OBJDIR = axobj
+   endif
+  else
+   ifeq ($(PCB), 9XT)
+    OBJDIR = a9xtobj
+   else
+    ifeq ($(PCB), X7)
+     OBJDIR = ax7obj
+    else
+     ifeq ($(REVX), 1)
+      OBJDIR = arobj
+     else
+      ifeq ($(PCB), X9E)
+       OBJDIR = ax9eobj
+      else
+       OBJDIR = aobj
+      endif
+     endif
+    endif
+   endif
+  endif
+ endif
+endif
+
+#
+# Define linker script file here
+#
+ifeq ($(PCB), X9D)
+ ARCH = ARM
+ LDSCRIPT = stm32_ramApp.ld
+ TRGT = arm-none-eabi-
+ CPPDEFS += -DHSE_VALUE=12000000
+ CPPDEFS += -DPCBX9D 
+ CPPDEFS += -DAPP
+ ifeq ($(REVPLUS), 1)
+  FULL_PRJ = $(PROJECT)_X9DP
+ else
+  FULL_PRJ = $(PROJECT)_X9D
+ endif
+ EXTRAINCDIRS += include
+ EXTRAINCDIRS += ../include
+else
+ ifeq ($(PCB), TARANIS)
+  ARCH = ARM
+  LDSCRIPT = stm32_ramApp.ld
+  TRGT = arm-none-eabi-
+  CPPDEFS += -DHSE_VALUE=12000000
+  CPPDEFS += -DPCBX9D 
+  CPPDEFS += -DPCBTARANIS 
+  CPPDEFS += -DAPP
+  ifeq ($(REVPLUS), 1)
+   FULL_PRJ = $(PROJECT)_BootTp
+  else
+   FULL_PRJ = $(PROJECT)_BootT
+  endif
+  EXTRAINCDIRS += include
+  EXTRAINCDIRS += ../include
+ else
+  ifeq ($(PCB), 9XT)
+   ARCH = ARM
+   LDSCRIPT = stm32_ramApp.ld
+   TRGT = arm-none-eabi-
+   CPPDEFS += -DHSE_VALUE=12000000
+   CPPDEFS += -DPCB9XT 
+   CPPDEFS += -DPCBSP 
+   CPPDEFS += -DAPP
+   FULL_PRJ = $(PROJECT)_9xt
+   EXTRAINCDIRS += include
+   EXTRAINCDIRS += ../include
+  else
+   ifeq ($(PCB), X9E)
+    ARCH = ARM
+    LDSCRIPT = stm32_ramApp.ld
+    TRGT = arm-none-eabi-
+    CPPDEFS += -DHSE_VALUE=12000000
+    CPPDEFS += -DREV9E 
+    CPPDEFS += -DREVPLUS
+    CPPDEFS += -DPCBX9D
+    CPPDEFS += -DAPP
+    FULL_PRJ = $(PROJECT)_x9e
+    EXTRAINCDIRS += include
+    EXTRAINCDIRS += ../include
+   else
+    ifeq ($(PCB), X7)
+     ARCH = ARM
+     LDSCRIPT = stm32_ramApp.ld
+     TRGT = arm-none-eabi-
+     CPPDEFS += -DHSE_VALUE=12000000
+     CPPDEFS += -DPCBX7 
+     CPPDEFS += -DPCBX9D
+     CPPDEFS += -DAPP
+     FULL_PRJ = $(PROJECT)_x7
+     EXTRAINCDIRS += include
+    EXTRAINCDIRS += ../include
+    else
+     LDSCRIPT = atmel_ramApp.ld
+     FULL_PRJ = $(PROJECT)_atmel
+     EXTRAINCDIRS += include
+     EXTRAINCDIRS += ../include
+     TRGT = arm-none-eabi-
+     CPPDEFS += -DPCBSKY 
+     CPPDEFS += -DAPP
+     UDEFS = -Dat91sam3s8
+    endif
+   endif
+  endif
+ endif
+endif
+
+
+
+# else
+#  else
+#   ifeq ($(PCB), X12D)
+#    ARCH = ARM
+#    LDSCRIPT = stm32f4_ramBoot.ld
+#    TRGT = arm-none-eabi-
+#    CPPDEFS += -DHSE_VALUE=12000000
+#    CPPDEFS += -DPCBX12D
+#    FULL_PRJ = $(PROJECT)_ramBootx12
+#    EXTRAINCDIRS += include
+#    UDEFS = -DSTM32F429_439xx
+#   endif
+#  endif
+#  endif
+# endif
+# endif
+
+ifeq ($(REVPLUS), 1)
+  CPPDEFS += -DREVPLUS
+endif
+
+
+# List all user C define here, like -D_DEBUG=1
+
+# Define ASM defines here
+UADEFS = 
+
+#ifeq ($(PCB), TARANIS)
+#SRC  = system_stm32f2xx.c \
+#       stm32f2xx_rcc.c \
+#       stm32f2xx_gpio.c \
+#       stm32f2xx_spi.c \
+#       misc.c \
+#		 ccsbcs.c \
+#       usb/usb_core.c \
+#       usb/usb_dcd.c \
+#       usb/usb_dcd_int.c \
+#       usb/usbd_core.c \
+#       usb/usbd_ioreq.c \
+#       usb/usbd_req.c \
+#       usb/usbd_msc_data.c \
+#       usb/usbd_msc_scsi.c \
+#       usb/usbd_msc_bot.c \
+#       usb/usbd_msc_core.c \
+#       usb/usbd_desc.c \
+#       usb/usb_bsp.c
+#
+#CPPSRC = aspi.cpp \
+#         lcd_driver.cpp \
+#         driversboot.cpp \
+#         logicioboot.cpp \
+#         ff.cpp \
+#			x9ddiskio.cpp \
+#         usbd_usr.cpp \
+#         usbd_storage_msd.cpp \
+#       	i2c_ee.cpp \
+#         lcdboot.cpp \
+#			power.cpp \
+#         boot.cpp
+#
+## List ASM source files here
+#ASRC = startup_stm32f2xx.s
+#
+#else
+#
+
+ifeq ($(PCB), X9D)
+SRC  = ../system_stm32f2xx.c \
+       ../stm32f2xx_rcc.c \
+       ../stm32f2xx_gpio.c \
+       ../stm32f2xx_spi.c \
+       ../misc.c
+
+#       ../usb/usb_core.c \
+#       ../usb/usb_dcd.c \
+#       ../usb/usb_dcd_int.c \
+#       ../usb/usbd_core.c \
+#       ../usb/usbd_ioreq.c \
+#       ../usb/usbd_req.c \
+#       ../usb/usbd_msc_data.c \
+#       ../usb/usbd_msc_scsi.c \
+#       ../usb/usbd_msc_bot.c \
+#       ../usb/usbd_msc_core.c \
+#       ../usb/usbd_desc.c \
+#       ../usb/usb_bsp.c
+
+CPPSRC = ../lcdboot.cpp \
+         ../aspi.cpp \
+         ../ff.cpp \
+			../ff_lfn.cpp \
+         ../x9ddiskio.cpp \
+         ../lcd_driver.cpp \
+         ../driversboot.cpp \
+         ../logicioboot.cpp \
+			../power.cpp \
+			menucontrol.cpp \
+			Sport.cpp \
+         ChangId.cpp
+
+
+#       	../i2c_ee.cpp \
+#         ../usbd_usr.cpp \
+#         ../usbd_storage_msd.cpp \
+
+# List ASM source files here
+ASRC = ../startup_stm32f2xx.s
+
+else
+ ifeq ($(PCB), X7)
+SRC  = ../system_stm32f2xx.c \
+       ../stm32f2xx_rcc.c \
+       ../stm32f2xx_gpio.c \
+       ../stm32f2xx_spi.c \
+       ../misc.c
+
+#       ../usb/usb_core.c \
+#       ../usb/usb_dcd.c \
+#       ../usb/usb_dcd_int.c \
+#       ../usb/usbd_core.c \
+#       ../usb/usbd_ioreq.c \
+#       ../usb/usbd_req.c \
+#       ../usb/usbd_msc_data.c \
+#       ../usb/usbd_msc_scsi.c \
+#       ../usb/usbd_msc_bot.c \
+#       ../usb/usbd_msc_core.c \
+#       ../usb/usbd_desc.c \
+#       ../usb/usb_bsp.c
+
+CPPSRC = ../lcdboot.cpp \
+         ../aspi.cpp \
+         ../ff.cpp \
+			../ff_lfn.cpp \
+         ../x9ddiskio.cpp \
+         ../lcd_driver.cpp \
+         ../driversboot.cpp \
+         ../logicioboot.cpp \
+         ../power.cpp \
+			menucontrol.cpp \
+			Sport.cpp \
+         ChangId.cpp
+
+
+#       	i2c_ee.cpp \
+#         usbd_usr.cpp \
+#         usbd_storage_msd.cpp \
+
+# List ASM source files here
+ASRC = x9d/startup_stm32f2xx.s
+#
+ else
+  ifeq ($(PCB), 9XT)
+SRC  = ../system_stm32f2xx.c \
+		 ../stm32f2xx_rcc.c \
+       ../stm32f2xx_gpio.c \
+       ../stm32f2xx_spi.c \
+       ../misc.c
+
+#       usb/usb_core.c \
+#       usb/usb_dcd.c \
+#       usb/usb_dcd_int.c \
+#       usb/usbd_core.c \
+#       usb/usbd_ioreq.c \
+#       usb/usbd_req.c \
+#       usb/usbd_msc_data.c \
+#       usb/usbd_msc_scsi.c \
+#       usb/usbd_msc_bot.c \
+#       usb/usbd_msc_core.c \
+#       usb/usbd_desc.c \
+#       usb/usb_bsp.c
+
+CPPSRC = ../lcdboot.cpp \
+         ../aspi.cpp \
+         ../ff.cpp \
+			../ff_lfn.cpp \
+         ../x9ddiskio.cpp \
+         ../driversboot.cpp \
+         ../logicioboot.cpp \
+			../power.cpp \
+			../mega64.cpp \
+			menucontrol.cpp \
+			Sport.cpp \
+         ChangId.cpp
+#
+##         lcd_driver.cpp \
+##       	i2c_ee.cpp \
+#         usbd_usr.cpp \
+#         usbd_storage_msd.cpp \
+
+
+# List ASM source files here
+ASRC = ../x9d/startup_stm32f2xx.s
+
+#else
+#ifeq ($(PCB), X9E)
+#SRC  = system_stm32f2xx.c \
+#       stm32f2xx_rcc.c \
+#       stm32f2xx_gpio.c \
+#       stm32f2xx_spi.c \
+#       misc.c \
+#       usb/usb_core.c \
+#       usb/usb_dcd.c \
+#       usb/usb_dcd_int.c \
+#       usb/usbd_core.c \
+#       usb/usbd_ioreq.c \
+#       usb/usbd_req.c \
+#       usb/usbd_msc_data.c \
+#       usb/usbd_msc_scsi.c \
+#       usb/usbd_msc_bot.c \
+#       usb/usbd_msc_core.c \
+#       usb/usbd_desc.c \
+#       usb/usb_bsp.c
+#
+#CPPSRC = lcdboot.cpp \
+#         ff.cpp \
+#         aspi.cpp \
+#         x9ddiskio.cpp \
+#         lcd_driver.cpp \
+#       	i2c_ee.cpp \
+#         driversboot.cpp \
+#         logicioboot.cpp \
+#			ff_lfn.cpp \
+#         usbd_usr.cpp \
+#         usbd_storage_msd.cpp \
+#			power.cpp \
+#         boot.cpp
+#
+#
+## List ASM source files here
+#ASRC = x9d/startup_stm32f2xx.s
+#
+#else
+#ifeq ($(PCB), X12D)
+#SRC  = X12D/system_stm32f4xx.c \
+#       X12D/stm32f4xx_rcc.c \
+#		 X12D/sdram_driver.c \
+#		 X12D/stm32f4xx_fmc.c \
+#       X12D/stm32f4xx_gpio.c \
+#       X12D/misc.c
+#
+##       X12D/pwr_driver.c
+
+#SRC  = X12D/system_stm32f4xx.c \
+#       X12D/stm32f4xx_spi.c \
+#       X12D/misc.c \
+#		 X12D/stm32f4xx_dma2d.c \
+#		 X12D/stm32f4xx_dma.c \
+#		 X12D/stm32f4xx_ltdc.c \
+#       X12D/stm32f4xx_sdio.c \
+#		 X12D/sdio_sd.c \
+#       X12D/usb_core.c \
+#       X12D/usb_dcd.c \
+#       X12D/usb_dcd_int.c \
+#       X12D/usbd_core.c \
+#       X12D/usbd_ioreq.c \
+#       X12D/usbd_req.c \
+#       X12D/usbd_msc_data.c \
+#       X12D/usbd_msc_scsi.c \
+#       X12D/usbd_msc_bot.c \
+#       X12D/usbd_msc_core.c \
+#       X12D/usbd_desc.c \
+#       X12D/usb_bsp.c
+#
+#CPPSRC = logicioboot.cpp \
+#         boot.cpp
+#
+##CPPSRC = X12D/lcdboot.cpp \
+##         logicioboot.cpp
+##         X12D/lcd_driver.cpp \
+##         ff.cpp \
+##         x12ddiskio.cpp \
+##         lcd_driver.cpp \
+##         X12D/hdrivers.cpp \
+##			ff_lfn.cpp \
+##         X12D/usbd_usr.cpp \
+##         X12D/led_driver.cpp \
+##         usbd_storage_msd.cpp \
+#
+#
+## List ASM source files here
+#ASRC = X12D/startup_stm32f42_43xxx.s
+#
+  else
+
+# List C source files here
+SRC  = ../core_cm3.c \
+       ../board_lowlevel.c \
+       ../crt.c \
+       ../vectors_sam3s.c
+
+#       MEDSdcard.c \
+#       usb/device/core/USBD_UDP.c usb/device/core/USBDDriver.c usb/device/core/USBDCallbacks.c \
+#       usb/device/massstorage/MSDDriver.c usb/device/massstorage/MSDDStateMachine.c \
+#		 usb/device/massstorage/MSDLun.c usb/device/massstorage/MSDDriverDescriptors.c usb/device/massstorage/SBCMethods.c \
+#       usb/common/core/USBEndpointDescriptor.c usb/common/core/USBGenericRequest.c \
+#		 usb/common/core/USBFeatureRequest.c usb/common/core/USBInterfaceRequest.c usb/common/core/USBGetDescriptorRequest.c \
+#       usb/common/core/USBSetAddressRequest.c usb/common/core/USBSetConfigurationRequest.c \
+#       usb/common/core/USBConfigurationDescriptor.c usb/common/core/USBGenericDescriptor.c \
+
+CPPSRC = ../lcdboot.cpp \
+			../driversboot.cpp \
+			../logicioboot.cpp \
+         ../sdcard_driver.cpp \
+			../power.cpp \
+			../diskio.cpp \
+         ../ff.cpp \
+			../ff_lfn.cpp \
+			menucontrol.cpp \
+			Sport.cpp \
+         ChangId.cpp
+
+#         massstorage.cpp \
+#         bootsamEeprom.cpp \
+
+# List ASM source files here
+ASRC =
+
+
+#endif
+#endif
+#endif
+  endif
+ endif
+endif
+
+# List all user directories here
+UINCDIR = ./inc
+# \
+#          ./cmsis/core \
+#          ./cmsis/device
+
+# List the user directory to look for the libraries here
+ULIBDIR =
+
+# List all user libraries here
+ULIBS = 
+
+# Define optimisation level here
+OPT = -Os
+
+#
+# End of user defines
+##############################################################################################
+
+INCDIR  = $(patsubst %,-I%,$(DINCDIR) $(UINCDIR))
+LIBDIR  = $(patsubst %,-L%,$(DLIBDIR) $(ULIBDIR))
+
+ifeq ($(RUN_FROM_FLASH), 0)
+DEFS    = $(DDEFS) $(UDEFS) -DRUN_FROM_FLASH=0
+else
+DEFS    = $(DDEFS) $(UDEFS) -DRUN_FROM_FLASH=1
+endif
+
+ADEFS   = $(DADEFS) $(UADEFS)
+
+# Generate the (raw) object files lists
+AXOBJS    = $(ASRC:%.s=%.o)
+CXOBJS    = $(SRC:%.c=%.o)
+CPPXOBJS  = $(CPPSRC:%.cpp=%.o)
+
+# Remove directory info from the object files lists
+AOBJS    = $(patsubst %,$(OBJDIR)/%,$(notdir $(AXOBJS) ))
+COBJS    = $(patsubst %,$(OBJDIR)/%,$(notdir $(CXOBJS) ))
+CPPOBJS  = $(patsubst %,$(OBJDIR)/%,$(notdir $(CPPXOBJS) ))
+DIRS = $(sort $(dir $(AXOBJS) $(CXOBJS) $(CPPXOBJS) ) )
+
+# Search path for sources
+VPATH = $(DIRS)
+
+# Generates the dependancy files lists
+INCLUDES = $(AOBJS:.o=.o.d) $(COBJS:.o=.o.d) $(CPPOBJS:.o=.o.d)
+
+LIBS    = $(DLIBS) $(ULIBS)
+MCFLAGS = -mcpu=$(MCU)
+
+#ASFLAGS = $(MCFLAGS) -g -gdwarf-2 -Wa,-amhls=$(OBJDIR)/$(notdir $(<:.s=.lst)) $(ADEFS)
+CPFLAGS = $(MCFLAGS) $(OPT) -gdwarf-2 -mthumb -fomit-frame-pointer -Wall -Wstrict-prototypes -fverbose-asm $(DEFS)
+LDFLAGS = $(MCFLAGS) -mthumb -nostartfiles -T$(LDSCRIPT) -Wl,-Map=$(FULL_PRJ).map,--cref,--no-warn-mismatch $(LIBDIR)
+CPPFLAGS = $(MCFLAGS) $(OPT) -gdwarf-2 -mthumb -fomit-frame-pointer -Wall -fverbose-asm $(DEFS)
+
+CPPFLAGS += $(CPPDEFS)
+CPFLAGS += $(CPPDEFS)
+CPFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
+
+# If REVX board
+ifeq ($(REVX), 1)
+ CPPDEFS += -DREVX
+ EXT_MOD=REVB-X
+endif
+
+CPPDEFS += -DCPUARM
+
+CPPDEFS += -DREVB
+
+# If serial Debug required
+ifeq ($(DEBUG), 1)
+ CPPDEFS += -DDEBUG
+endif
+
+CPPDEFS += -DBOOT
+
+# Generate dependency information
+CPFLAGS += -MD -MP -MF $(OBJDIR)/$(@F).d
+CPPFLAGS += -MD -MP -MF $(OBJDIR)/$(@F).d
+CPPFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
+
+#
+# makefile rules
+#
+
+all: size_before $(AOBJS) $(COBJS) $(CPPOBJS) $(FULL_PRJ).elf $(FULL_PRJ).lss $(FULL_PRJ).bin $(FULL_PRJ).app size
+
+#begin:
+#	@echo "Includes"
+#	@echo $(INCLUDES)
+#	@echo
+#	@echo $(OBJS) $(COBJS) $(CPPOBJS)
+#	@echo
+#	@echo $(DIRS)
+
+size_before:
+#	arm-none-eabi-size $(FULL_PRJ).elf
+	@if test -f $(FULL_PRJ).elf; then arm-none-eabi-size $(FULL_PRJ).elf; fi
+
+size:
+#	arm-none-eabi-size $(FULL_PRJ).elf
+	@if test -f $(FULL_PRJ).elf; then arm-none-eabi-size $(FULL_PRJ).elf; fi
+
+$(OBJDIR):
+	test -d $(OBJDIR) || $(shell mkdir -p $(OBJDIR) )
+
+$(CPPOBJS) : $(OBJDIR)/%.o : %.cpp
+	@mkdir -p $(@D)
+	$(CC) -c $(CPPFLAGS) -fno-exceptions -I . $(INCDIR) $< -o $@
+
+$(COBJS) : $(OBJDIR)/%.o : %.c
+	@mkdir -p $(@D)
+	$(CC) -c $(CPFLAGS) -I . $(INCDIR) $< -o $@
+
+
+$(AOBJS) : $(OBJDIR)/%.o : %.s
+	@mkdir -p $(@D)
+	$(AS) -c $(ASFLAGS) $< -o $@
+
+%elf: $(AOBJS) $(COBJS) $(CPPOBJS) 
+	$(CC) $(AOBJS) $(COBJS) $(CPPOBJS) $(LDFLAGS) $(LIBS) -o $@
+  
+# Create extended listing file from ELF output file.
+%.lss: %.elf
+	$(CLSS) -h -S $< > $@
+
+%hex: %elf
+	$(BIN) $< $@
+
+%bin: %elf
+	$(BINX) $< $@
+
+%app: %bin
+	@-rm -f $@
+	@-cp $< $@
+
+#  $(PROJECT)_flash8
+#  $(PROJECT)_flash4
+#  $(PROJECT)_ramBootS
+#  $(PROJECT)_ramBootT
+
+clean:
+	-rm -f aobj/*.*
+	-rm -f axobj/*.*
+	-rm -f arobj/*.*
+	-rm -f atobj/*.*
+	-rm -f atpobj/*.*
+	-rm -f axpobj/*.*
+	-rm -f a9xtobj/*.*
+	-rm -f ax9eobj/*.*
+	-rm -f ax7obj/*.*
+	-rm -f *.elf
+	-rm -f *.map
+	-rm -f *.hex
+	-rm -f *.bin
+	-rm -f *.lss
+
+# 
+# Include the dependency files, should be the last of the makefile
+#
+#-include $(shell mkdir .dep 2>/dev/null) $(wildcard .dep/*)
+
+# Add in all the dependancy files
+-include $(INCLUDES)
+
+# *** EOF ***

@@ -1,5 +1,5 @@
 /****************************************************************************
-*  Copyright (c) 2014 by Michael Blandford. All rights reserved.
+*  Copyright (c) 2018 by Michael Blandford. All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions
@@ -84,13 +84,13 @@
 #include "timers.h"
 #include "mega64.h"
 
-extern "C" {
-#include "usb_dcd_int.h"
-#include "usb_bsp.h"
-#include "usbd_desc.h"
-#include "usbd_msc_core.h"
-#include "usbd_usr.h"
-}
+//extern "C" {
+//#include "usb_dcd_int.h"
+//#include "usb_bsp.h"
+//#include "usbd_desc.h"
+//#include "usbd_msc_core.h"
+//#include "usbd_usr.h"
+//}
 
 #endif
 
@@ -155,6 +155,9 @@ void disable_software_com2() ;
 
 #ifdef PCB9XT
 extern void com2_Configure( uint32_t baudRate, uint32_t invert, uint32_t parity ) ;
+volatile int32_t Rotary_count ;
+int32_t LastRotaryValue ;
+int32_t Rotary_diff ;
 #endif
 
 #ifdef PCBSKY
@@ -1562,12 +1565,13 @@ extern uint8_t OptrexDisplay ;
 	__enable_irq() ;
  #endif // PCBX7
 
-#ifdef PCB9XT
-	BlSetColour( 50, 2 ) ;	
-#endif
 
 	init10msTimer() ;
 	start_2Mhz_timer() ;
+
+#ifdef PCB9XT
+	BlSetColour( 60, 3 ) ;	
+#endif
 
 #if ( defined(PCBX9D) || defined(PCB9XT) )
 	// SD card detect pin
@@ -1675,13 +1679,30 @@ extern uint8_t OptrexDisplay ;
 	uint8_t event = getEvent() ;
 	killEvents(event) ;
 
+#ifdef PCB9XT
+	BlSetColour( 70, 3 ) ;	
+#endif
+
 	for(;;)
 	{
 		wdt_reset() ;
 
 #ifdef PCB9XT
 	checkM64() ;
-#endif
+//	checkRotaryEncoder() ;
+extern uint8_t M64EncoderPosition ;
+	static uint8_t lastPosition = 0 ;
+	if ( lastPosition != M64EncoderPosition )
+	{
+		int8_t diff = M64EncoderPosition - lastPosition ;
+		if ( diff < 9 && diff > -9 )
+		{
+			Rotary_count += diff ;
+		}
+		lastPosition = M64EncoderPosition ;
+	}
+#endif	// PCB9XT
+
 //		maintenanceBackground() ;
 #if defined(REV9E) || defined(PCBX7) || defined(PCBSKY) || defined(PCBX12D)
 		checkRotaryEncoder() ;
@@ -1707,12 +1728,12 @@ extern uint8_t OptrexDisplay ;
 			}
 #else
  #ifndef PCBX9D
-  #ifndef PCB9XT
+//  #ifndef PCB9XT
 			{
 				int32_t x ;
 //				if ( g_eeGeneral.rotaryDivisor == 1)
 //				{
-//					x = Rotary_count >> 2 ;
+					x = Rotary_count >> 2 ;
 //				}
 //				else if ( g_eeGeneral.rotaryDivisor == 2)
 //				{
@@ -1720,16 +1741,16 @@ extern uint8_t OptrexDisplay ;
 //				}
 //				else
 //				{
-					x = Rotary_count ;
+//					x = Rotary_count ;
 //				}
 				Rotary_diff = x - LastRotaryValue ;
 				LastRotaryValue = x ;
 			}
-  #endif
+//  #endif
  #endif
 #endif
 #ifndef PCBX9D
- #ifndef PCB9XT
+// #ifndef PCB9XT
 			if ( event == 0 )
 			{
 	extern int32_t Rotary_diff ;
@@ -1743,7 +1764,7 @@ extern uint8_t OptrexDisplay ;
 				}
 				Rotary_diff = 0 ;
 			}
- #endif
+// #endif
 #endif
 
 
@@ -1754,7 +1775,11 @@ extern uint8_t OptrexDisplay ;
 			}
 			g_menuStack[g_menuStackPtr](event) ;
 			// Only update display every 40mS, improves SPort update throughput
+#ifdef PCB9XT
+			if ( ++displayTimer >= 6 )
+#else
 			if ( ++displayTimer >= 4 )
+#endif
 			{
 				displayTimer = 0 ;
     		refreshDisplay() ;
