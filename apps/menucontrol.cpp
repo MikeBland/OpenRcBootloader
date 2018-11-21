@@ -464,7 +464,7 @@ uint8_t MState2::check(uint8_t event, uint8_t curr, MenuFuncP *menuTab, uint8_t 
       if(cc>=MAXCOL(m_posVert, horTab, horTabMax)) cc = MAXCOL(m_posVert, horTab, horTabMax);
       l_posHorz = cc;
 
-      BLINK_SYNC;
+//      BLINK_SYNC;
       //            scrollLR = 0;
     }
   }
@@ -521,7 +521,7 @@ uint8_t MState2::check(uint8_t event, uint8_t curr, MenuFuncP *menuTab, uint8_t 
 				{
 					event = 0 ;
 				}
-        BLINK_SYNC;
+//        BLINK_SYNC;
     break;
 
     case EVT_KEY_REPT(BOOT_KEY_LEFT):  //dec
@@ -533,7 +533,7 @@ uint8_t MState2::check(uint8_t event, uint8_t curr, MenuFuncP *menuTab, uint8_t 
 				{
 					event = 0 ;
 				}
-        BLINK_SYNC;
+//        BLINK_SYNC;
     break;
 
     case EVT_KEY_REPT(BOOT_KEY_DOWN):  //inc
@@ -542,7 +542,7 @@ uint8_t MState2::check(uint8_t event, uint8_t curr, MenuFuncP *menuTab, uint8_t 
         if(s_editMode)break;
         INC(m_posVert,maxrow);
         l_posHorz = min(l_posHorz, MAXCOL(m_posVert, horTab, horTabMax));
-        BLINK_SYNC;
+//        BLINK_SYNC;
     break;
 
     case EVT_KEY_REPT(BOOT_KEY_UP):  //dec
@@ -551,7 +551,7 @@ uint8_t MState2::check(uint8_t event, uint8_t curr, MenuFuncP *menuTab, uint8_t 
         if(s_editMode)break;
         DEC(m_posVert,maxrow);
         l_posHorz = min(l_posHorz, MAXCOL(m_posVert, horTab, horTabMax));
-        BLINK_SYNC;
+//        BLINK_SYNC;
     break;
   }
 	s_editing = s_editMode || P1values.p1valdiff ;

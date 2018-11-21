@@ -47,7 +47,7 @@
 #include "radio.h"
 #include "logicio.h"
 
-#if (defined(REV9E) || defined(PCBX7))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
 #define POWER_STATE_OFF				0
 #define POWER_STATE_START			1
 #define POWER_STATE_RUNNING		2
@@ -55,6 +55,11 @@
 #define POWER_STATE_STOPPED		4
 
 uint8_t PowerState = POWER_STATE_OFF ;
+
+#ifdef PCBT12
+uint8_t PowerCount ;
+#endif
+
 #endif
 
 #ifdef PCBSKY 
@@ -99,17 +104,24 @@ void soft_power_off()
 
 uint32_t check_soft_power()
 {
-#if (defined(REV9E) || defined(PCBX7))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
 	uint32_t switchValue ;
 #endif
   
-#if (defined(REV9E) || defined(PCBX7))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
+#if defined(PCBXLITE)
+	switchValue = GPIO_ReadInputDataBit(GPIOPWRSENSE, PIN_PWR_STATUS) == Bit_RESET ;
+#else
 	switchValue = GPIO_ReadInputDataBit(GPIOPWR, PIN_PWR_STATUS) == Bit_RESET ;
+#endif
 	switch ( PowerState )
 	{
 		case POWER_STATE_OFF :
 		default :
 			PowerState = POWER_STATE_START ;
+#ifdef PCBT12
+			PowerCount = 0 ;
+#endif
    		return POWER_ON ;
 		break ;
 			
@@ -124,9 +136,26 @@ uint32_t check_soft_power()
 		case POWER_STATE_RUNNING :
 			if ( switchValue )
 			{
+#ifdef PCBT12
+				if ( ++PowerCount > 20 )
+				{
+					PowerState = POWER_STATE_STOPPING ;
+   				return POWER_X9E_STOP ;
+				}
+				else
+				{
+   				return POWER_ON ;
+				}
+#endif
 				PowerState = POWER_STATE_STOPPING ;
    			return POWER_X9E_STOP ;
 			}
+#ifdef PCBT12
+			else
+			{
+				PowerCount = 0 ;
+			}
+#endif
    		return POWER_ON ;
 		break ;
 
@@ -153,6 +182,22 @@ uint32_t check_soft_power()
 
 void init_soft_power()
 {
+#if defined(PCBXLITE)
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
+	
+	GPIO_ResetBits(GPIOPWRINT, PIN_INT_RF_PWR );
+	GPIO_ResetBits(GPIOPWREXT, PIN_EXT_RF_PWR);
+	GPIO_ResetBits(GPIOPWRSPORT, PIN_SPORT_PWR);
+
+	configure_pins( PIN_INT_RF_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTD ) ;
+	configure_pins( PIN_EXT_RF_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTD ) ;
+	configure_pins( PIN_MCU_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTE ) ;
+
+	configure_pins( PIN_PWR_STATUS, PIN_INPUT | PIN_PORTA ) ;
+
+#else	
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
 #ifdef REVPLUS
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN ; 		// Enable portD clock
@@ -181,9 +226,11 @@ void init_soft_power()
 	configure_pins( PIN_TRNDET, PIN_INPUT | PIN_PULLUP | PIN_PORTA ) ;
   
   // Soft power ON
+
+#endif
 	
 	GPIO_SetBits(GPIOPWR,PIN_MCU_PWR);
-#if (defined(REV9E) || defined(PCBX7))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
 	PowerState = POWER_STATE_START ;
 #endif
 

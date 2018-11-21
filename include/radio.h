@@ -53,6 +53,35 @@ enum EnumKeys {
 #endif
 
 #ifdef PCBX9D
+#ifdef PCBXLITE
+#define NUM_KEYS 8
+enum EnumKeys {
+    KEY_MENU ,
+    KEY_EXIT ,
+    KEY_DOWN ,
+    KEY_UP  ,
+    KEY_RIGHT ,
+    KEY_LEFT,
+		KEY_TRN,
+	  BTN_RE
+} ;
+#else
+
+#ifdef PCBT12
+#define NUM_KEYS 8
+enum EnumKeys {
+    KEY_MENU ,
+    KEY_EXIT ,
+    KEY_DOWN ,
+    KEY_UP  ,
+    KEY_RIGHT ,
+    KEY_LEFT,
+		KEY_TRN,
+	  BTN_RE
+} ;
+#else
+
+
 #define NUM_KEYS 8
 enum EnumKeys {
     KEY_MENU ,
@@ -64,6 +93,8 @@ enum EnumKeys {
 		KEY_TRN,
 	  BTN_RE
 } ;
+#endif
+#endif
 #endif
 
 #ifdef PCBX12D
@@ -107,6 +138,12 @@ extern void soft_power_off( void ) ;
 
 #define DISPLAY_CHAR_WIDTH	21
 
+#ifdef PCBX12D	
+  #define WIDE_SCREEN	1
+//  #define SDRAM_BANK_ADDR     ((uint32_t)0xD0000000)
+	#define __SDRAM __attribute__((section(".sdram"), aligned(32)))
+#endif
+
 #endif
 
 #ifdef PCBX9D
@@ -119,11 +156,28 @@ extern void soft_power_off( void ) ;
 #define BOOT_KEY_EXIT		KEY_EXIT
 #else
 #ifdef PCBX7
+ #ifdef PCBT12
+#define BOOT_KEY_UP			KEY_UP
+#define BOOT_KEY_DOWN		KEY_DOWN
+#define BOOT_KEY_LEFT		KEY_LEFT
+#define BOOT_KEY_RIGHT	KEY_RIGHT
+#define BOOT_KEY_MENU		KEY_MENU
+#define BOOT_KEY_EXIT		KEY_EXIT
+ #else
 #define BOOT_KEY_UP			KEY_PLUS
 #define BOOT_KEY_DOWN		KEY_MINUS
 #define BOOT_KEY_LEFT		KEY_MENU
 #define BOOT_KEY_RIGHT	KEY_PAGE
 #define BOOT_KEY_MENU		KEY_ENTER
+#define BOOT_KEY_EXIT		KEY_EXIT
+#endif
+#else
+#ifdef PCBXLITE
+#define BOOT_KEY_UP			KEY_UP
+#define BOOT_KEY_DOWN		KEY_DOWN
+#define BOOT_KEY_LEFT		KEY_LEFT
+#define BOOT_KEY_RIGHT	KEY_RIGHT
+#define BOOT_KEY_MENU		KEY_MENU
 #define BOOT_KEY_EXIT		KEY_EXIT
 #else
 #define BOOT_KEY_UP			KEY_MENU
@@ -134,11 +188,12 @@ extern void soft_power_off( void ) ;
 #define BOOT_KEY_EXIT		KEY_ENTER
 #endif
 #endif
-#ifdef PCBX7
+#endif
+#if defined(PCBX7) || defined(PCBXLITE)
 #define DISPLAY_CHAR_WIDTH	21
 #else // PCBX7
 #ifdef REV9E
-#define DISPLAY_CHAR_WIDTH	35
+#define DISPLAY_CHAR_WIDTH	33
 #else
 #define DISPLAY_CHAR_WIDTH	31
 #endif

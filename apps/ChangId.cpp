@@ -109,6 +109,7 @@
 #include "logicio.h"
 
 #include "menucontrol.h"
+#include "..\stamp-app.h"
 
 #define	NO_RECEIVE		0
 #define WITH_RECEIVE	1
@@ -126,12 +127,24 @@ const uint8_t Version[] =
 #endif
 #ifdef PCBX9D
  #ifdef REVPLUS
+  #ifdef REV9E
+	'A', 'P', 'P', 'X', '9', 'E'
+  #else
 	'A', 'P', 'P', 'X', '9', 'P'
+	#endif
  #else
   #ifdef PCBX7
-	'A', 'P', 'P', 'Q', 'X', '7'
+   #ifdef PCBT12
+		'A', 'P', 'P', 'T', '1', '2'
+	 #else
+		'A', 'P', 'P', 'Q', 'X', '7'
+	 #endif
   #else
+   #ifdef PCBXLITE
+	'A', 'P', 'P', 'X', 'L', 'T'
+   #else
 	'A', 'P', 'P', 'X', '9', 'D'
+   #endif
   #endif
  #endif
 #endif
@@ -143,8 +156,10 @@ const uint8_t Version[] =
 __attribute__ ((section(".text"), used))
 
 #if defined(REV9E) || defined(PCBX7) || defined(PCBSKY)
+#ifndef PCBT12
 extern void init_rotary_encoder() ;
 extern void checkRotaryEncoder() ;
+#endif
 #endif
 
 #if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
@@ -259,8 +274,13 @@ uint8_t AllSubState ;
 #define EXTERNAL_RF_ON()      GPIO_SetBits(GPIOPWREXT, PIN_EXT_RF_PWR);GPIO_SetBits(GPIOB, GPIO_Pin_2)
 #define EXTERNAL_RF_OFF()     GPIO_ResetBits(GPIOPWREXT, PIN_EXT_RF_PWR);GPIO_ResetBits(GPIOPB, GPIO_Pin_2)
 #else
+ #ifdef PCBXLITE
+#define SPORT_RF_ON()      GPIO_SetBits(GPIOPWRSPORT, PIN_SPORT_PWR)
+#define SPORT_RF_OFF()     GPIO_ResetBits(GPIOPWRSPORT, PIN_SPORT_PWR)
+ #else
 #define EXTERNAL_RF_ON()      GPIO_SetBits(GPIOPWREXT, PIN_EXT_RF_PWR)
 #define EXTERNAL_RF_OFF()     GPIO_ResetBits(GPIOPWREXT, PIN_EXT_RF_PWR)
+ #endif
 #endif
 
 
@@ -476,11 +496,31 @@ void setCrc()
 	TxPhyPacket[9] = ~crc ;
 }
 
+void displayDate( uint8_t y )
+{
+	uint8_t x ;
+#ifdef PCBX9D
+#if defined(PCBX7) || defined(PCBXLITE)
+	x = FW*12+4 ;
+ #else
+	x = FW*20+4 ;
+ #endif
+#else
+	x = FW*12+4 ;
+#endif
+	lcd_putc( x+11, y, '.' ) ;
+	lcd_putc( x+32, y, '.' ) ;
+	lcd_putsn_P( x, y, DATE_STR, 2 ) ;
+	lcd_putsn_P( x+15, y, &DATE_STR[3], 3 ) ;
+	lcd_putsn_P( x+36, y, &DATE_STR[7], 2 ) ;
+}
+
 void menuChangeId(uint8_t event)
 {
 	static uint32_t state ;
  	
 	TITLE( "CHANGE SPort Id" ) ;
+	displayDate( 1*FH ) ;
 
 //	lcd_puts_Pleft( 2*FH, "Not Implemented(yet)" ) ;
 
@@ -495,7 +535,11 @@ void menuChangeId(uint8_t event)
 			state = CHANGE_SCANNING ;
 			SendCount = 2 ;
 #if defined(PCBX9D) || defined(PCB9XT)
-			EXTERNAL_RF_ON() ;
+ #ifdef PCBXLITE
+ 			SPORT_RF_ON() ;
+ #else
+ 			EXTERNAL_RF_ON() ;
+ #endif
 #endif
     break ;
     
@@ -873,10 +917,37 @@ void ledBlue()
 }
 #endif // PCBX7
 
+#ifdef PCBXLITE
+void ledOff()
+{
+  GPIO_SetBits(LED_RED_GPIO, LED_RED_GPIO_PIN);
+  GPIO_SetBits(LED_BLUE_GPIO, LED_BLUE_GPIO_PIN);
+  GPIO_SetBits(LED_GREEN_GPIO, LED_GREEN_GPIO_PIN);
+}
+
+void ledRed()
+{
+  ledOff();
+  GPIO_ResetBits(LED_RED_GPIO, LED_RED_GPIO_PIN);
+}
+
+void ledGreen()
+{
+  ledOff();
+  GPIO_ResetBits(LED_GREEN_GPIO, LED_GREEN_GPIO_PIN);
+}
+
+void ledBlue()
+{
+  ledOff();
+  GPIO_ResetBits(LED_BLUE_GPIO, LED_BLUE_GPIO_PIN);
+}
+#endif // PCBX7
+
 
 int main()
 {
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 	uint32_t i ;
 #endif
 #ifdef PCB9XT
@@ -938,10 +1009,14 @@ int main()
 	start_timer0() ;
 #endif
 
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 	init_hw_timer()	;
 	__enable_irq() ;
+#ifdef PCBXLITE
+	configure_pins( GPIO_Pin_8, PIN_OUTPUT | PIN_PORTD | PIN_HIGH ) ; // BOOT1/Sport power
+#else
 	configure_pins( GPIO_Pin_2, PIN_OUTPUT | PIN_PORTB | PIN_LOW ) ; // BOOT1/Sport power
+#endif // PCBXLITE
 #endif // PCBX7
 
 	lcd_init() ;
@@ -952,7 +1027,7 @@ extern uint8_t OptrexDisplay ;
 #endif
 	lcd_clear() ;
 #ifdef PCBX9D
- #ifdef PCBX7
+ #if defined(PCBX7) || defined(PCBXLITE)
 	lcd_puts_Pleft( 0, "Change Id" ) ;
  #else
 	lcd_puts_Pleft( 0, "\006Change Id" ) ;
@@ -969,7 +1044,9 @@ extern uint8_t OptrexDisplay ;
 	setup_switches() ;
 //	I2C_EE_Init() ;
  #ifndef PCBX7
+ #ifndef PCBXLITE
 	init_hw_timer()	;
+ #endif // PCBXLITE
  #endif // PCBX7
 #endif
 
@@ -980,7 +1057,9 @@ extern uint8_t OptrexDisplay ;
 #endif
 
  #ifndef PCBX7
+ #ifndef PCBXLITE
 	__enable_irq() ;
+ #endif // PCBXLITE
  #endif // PCBX7
 
 
@@ -1005,7 +1084,7 @@ extern uint8_t OptrexDisplay ;
 	initWatchdog() ;
 #endif
 
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 	i = 40 ;
 	do
 	{
@@ -1023,7 +1102,9 @@ extern uint8_t OptrexDisplay ;
 	init_rotary_encoder() ;
 #endif
 #ifdef PCBX7
+#ifndef PCBT12
 	init_rotary_encoder() ;
+#endif
 #endif // PCBX7
 #ifdef PCBSKY
 	init_rotary_encoder() ;
@@ -1084,7 +1165,9 @@ extern uint8_t M64EncoderPosition ;
 
 //		maintenanceBackground() ;
 #if defined(REV9E) || defined(PCBX7) || defined(PCBSKY) || defined(PCBX12D)
+#ifndef PCBT12
 		checkRotaryEncoder() ;
+#endif
 #endif
 
 		if ( Tenms )

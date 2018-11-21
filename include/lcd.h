@@ -22,7 +22,7 @@
 #define lcd_h
 
 #ifdef PCBX9D
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 #define DISPLAY_W 128
 #define DISPLAY_H  64
 #else
@@ -59,6 +59,21 @@
 /* time & telemetry flags */
 #define NO_UNIT       0x80
 
+#ifdef PCBX12D
+#define DISPLAY_W	480
+#define DISPLAY_H	272
+
+#define LCD_RED			0xF800
+#define LCD_GREEN		0x07E0
+#define LCD_BLUE		0x001F
+#define LCD_WHITE		0xFFFF
+#define LCD_BLACK		0
+#define LCD_GREY		0x8410
+#define LCD_STATUS_GREY	0x3BEF
+
+
+
+#endif
 
 
 extern uint8_t LcdLock ;
@@ -84,8 +99,19 @@ extern const uint8_t *ExtraBigFont ;
 
 extern uint8_t plotType ;
 
-extern void lcd_putc(uint8_t x,uint8_t y,const char c ) ;
+#ifdef PCBX12D
+extern uint16_t lcd_putcAtt( uint16_t x, uint16_t y, const char c, uint8_t mode ) ;
+extern void lcd_hlineStip( uint16_t x, uint16_t y, uint8_t w, uint8_t pat ) ;
+extern void lcd_char_inverse( uint16_t x, uint16_t y, uint16_t w, uint8_t blink ) ;
+extern void lcd_vline( uint16_t x, uint16_t y, int8_t h ) ;
+#else
 extern uint8_t lcd_putcAtt( uint8_t x, uint8_t y, const char c, uint8_t mode ) ;
+extern void lcd_hlineStip( unsigned char x, unsigned char y, signed char w, uint8_t pat ) ;
+extern void lcd_char_inverse( uint8_t x, uint8_t y, uint8_t w, uint8_t blink ) ;
+extern void lcd_vline( uint8_t x, uint8_t y, int8_t h ) ;
+#endif
+
+extern void lcd_putc(uint8_t x,uint8_t y,const char c ) ;
 extern void lcd_putsAttIdx(uint8_t x,uint8_t y,const char * s,uint8_t idx,uint8_t att) ;
 extern void lcd_putsnAtt(uint8_t x,uint8_t y,const char * s,uint8_t len,uint8_t mode) ;
 extern void lcd_putsn_P(uint8_t x,uint8_t y,const char * s,uint8_t len) ;
@@ -101,11 +127,8 @@ extern void lcd_outdezNAtt( uint8_t x, uint8_t y, int32_t val, uint8_t mode, int
 
 extern void lcd_hbar( uint8_t x, uint8_t y, uint8_t w, uint8_t h, uint8_t percent ) ;
 extern void lcd_rect(uint8_t x, uint8_t y, uint8_t w, uint8_t h ) ;
-extern void lcd_char_inverse( uint8_t x, uint8_t y, uint8_t w, uint8_t blink ) ;
 extern void lcd_plot( uint8_t x, uint8_t y ) ;
-extern void lcd_hlineStip( unsigned char x, unsigned char y, signed char w, uint8_t pat ) ;
 extern void lcd_hline( uint8_t x, uint8_t y, int8_t w ) ;
-extern void lcd_vline( uint8_t x, uint8_t y, int8_t h ) ;
 extern void lcd_clear( void ) ;
 extern void lcd_init( void ) ;
 extern void lcdSetRefVolt(uint8_t val) ;
@@ -120,8 +143,8 @@ extern void putsVBat(uint8_t x,uint8_t y,uint8_t att) ;
 extern void backlight_set( uint16_t brightness ) ;
 #endif
 
-#define BLINK_ON_PHASE (g_blinkTmr10ms & (1<<6))
-#define BLINK_SYNC      g_blinkTmr10ms = (3<<5)
+//#define BLINK_ON_PHASE (g_blinkTmr10ms & (1<<6))
+//#define BLINK_SYNC      g_blinkTmr10ms = (3<<5)
 
 #endif
 

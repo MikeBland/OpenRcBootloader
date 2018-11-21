@@ -36,6 +36,17 @@
 #include "stm32f2xx_rcc.h"
 #include "drivers.h"
 #endif
+
+#ifdef PCBX12D
+#include "radio.h"
+#include "hal.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
+#include "drivers.h"
+#endif
+
+
 #include "logicio.h"
 
 #ifdef EVT_KEY_MASK
@@ -113,6 +124,7 @@ int32_t LastRotaryValue ;
 int32_t Rotary_diff ;
 
 #ifdef PCBX7
+#ifndef PCBT12
 void init_rotary_encoder()
 {
 	configure_pins( 0x0A00, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
@@ -140,6 +152,7 @@ void checkRotaryEncoder()
 		Rotary_position |= dummy ;
 	}
 }
+#endif
 #else // PCBX7
 
 void init_rotary_encoder()
@@ -181,6 +194,7 @@ uint8_t getEvent()
 {
   register uint8_t evt = s_evt;
   s_evt=0;
+#ifndef PCBT12
 	checkRotaryEncoder() ;
 	{
 		int32_t x ;
@@ -201,6 +215,7 @@ extern int32_t Rotary_diff ;
 		}
 		Rotary_diff = 0 ;
 	}
+#endif
 	if ( evt != 0 )
 	{
 		LastEvt = evt ;
@@ -408,10 +423,24 @@ extern uint32_t readTrainerSwitch( void ) ;
     ++enuk;
   }
 
+#ifdef REV9E
+	uint8_t value = ~GPIOF->IDR & PIN_BUTTON_ENCODER ;
+	keys[BTN_RE].input( value,(EnumKeys)BTN_RE); // Rotary Enc. Switch
+#endif
+
 #ifdef PCBSKY
 //	checkRotaryEncoder() ;
 	uint8_t value = ~PIOB->PIO_PDSR & 0x40 ;
 	keys[BTN_RE].input( value,(EnumKeys)BTN_RE); // Rotary Enc. Switch
+#endif
+
+
+#ifdef APP
+#ifdef PCB9XT
+extern uint16_t M64Switches ;
+	uint8_t value = (M64Switches & 0x0200) ? 1 : 0 ;
+	keys[BTN_RE].input( value,(EnumKeys)BTN_RE); // Rotary Enc. Switch
+#endif
 #endif
 
 }
@@ -743,6 +772,7 @@ uint16_t BlData[27] ;
 uint8_t BlColours[3] ;
 uint8_t BlChanged ;
 uint8_t BlCount ;
+uint8_t BlSending ;
 
 void backlightSend() ;
 
@@ -754,7 +784,8 @@ void backlightSet( uint32_t value )
 	value <<= 8 ;
 	for ( i = 0 ; i < 24 ; i += 1 )
 	{
-		*blptr++ = ( value & 0x80000000 ) ? 12 : 5 ;
+//		*blptr++ = ( value & 0x80000000 ) ? 12 : 5 ;
+		*blptr++ = ( value & 0x80000000 ) ? 6 : 3 ;
 		value <<= 1 ;
 	}
 	*blptr++ = 40 ;
@@ -789,14 +820,17 @@ void BlSetColour( uint32_t level, uint32_t colour )
 	}
 	
 	level = (BlColours[0] << 16 ) | (BlColours[1] << 8 ) | (BlColours[2] ) ;
-//	if ( level != BlLastLevel )
-//	{
+	if ( level != BlLastLevel )
+	{
 		BlLastLevel = level ;
 		backlightSet( level ) ;
 		BlCount = 2 ;
 		BlChanged = 1 ;
-		backlightSend() ;
-//	}
+		if ( BlSending == 0 )
+		{
+			backlightSend() ;
+		}		 
+	}
 }
 
 extern uint32_t Peri1_frequency ;
@@ -804,7 +838,13 @@ extern uint32_t Timer_mult1 ;
 
 void backlightSend()
 {
-	BlChanged = 0 ;
+	BlSending = 1 ;
+	if ( BlChanged )
+	{
+		backlightSet( BlLastLevel ) ;
+		BlChanged = 0 ;
+		BlCount = 2 ;
+	}
 	
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ;           // Enable portB clock
   configure_pins( GPIO_Pin_9, PIN_PERIPHERAL | PIN_PORTB | PIN_PER_2 | PIN_OS25 | PIN_PUSHPULL ) ;
@@ -849,6 +889,12 @@ extern "C" void DMA1_Stream0_IRQHandler()
 	DMA1_Stream0->CR &= ~DMA_SxCR_EN ;		// Disable DMA
 	DMA1_Stream0->CR &= ~DMA_SxCR_TCIE ;		// Stop interrupt
   TIM4->CR1 &= ~TIM_CR1_CEN ;
+
+	BlSending = 0 ;
+	if ( BlChanged )
+	{
+		backlightSend() ;
+	}
 }
 
 

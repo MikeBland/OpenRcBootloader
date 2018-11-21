@@ -13,7 +13,7 @@
 
 #include "stm32f2xx.h"
 
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 
 #define LCD_NCS_HIGH()        LCD_NCS_GPIO->BSRRL = LCD_NCS_GPIO_PIN
 #define LCD_NCS_LOW()         LCD_NCS_GPIO->BSRRH = LCD_NCS_GPIO_PIN

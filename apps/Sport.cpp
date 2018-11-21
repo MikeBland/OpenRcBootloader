@@ -393,7 +393,11 @@ void com1_Configure( uint32_t baudRate, uint32_t invert, uint32_t parity )
 	GPIOB->BSRRH = 0x0004 ;		// output disable
 #else
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
-	GPIOD->BSRRH = PIN_SPORT_ON ;		// output disable
+ #ifdef PCBXLITE
+			GPIOD->BSRRL = PIN_SPORT_ON ;		// output disable
+ #else
+			GPIOD->BSRRH = PIN_SPORT_ON ;		// output disable
+ #endif
 #endif
 #ifdef PCB9XT
 // PB2 as SPort enable
@@ -436,7 +440,11 @@ void x9dSPortTxStart( uint8_t *buffer, uint32_t count, uint32_t receive )
 #ifdef PCB9XT
 	GPIOB->BSRRL = 0x0004 ;		// output enable
 #else
+ #ifdef PCBXLITE
+	GPIOD->BSRRH = 0x0010 ;		// output enable
+ #else
 	GPIOD->BSRRL = 0x0010 ;		// output enable
+ #endif
 #endif
 	if ( receive == 0 )
 	{
@@ -479,7 +487,11 @@ extern "C" void USART2_IRQHandler()
 			GPIOB->BSRRH = 0x0004 ;		// output disable
 
 #else
+ #ifdef PCBXLITE
+			GPIOD->BSRRL = PIN_SPORT_ON ;		// output disable
+ #else
 			GPIOD->BSRRH = PIN_SPORT_ON ;		// output disable
+ #endif
 #endif
 			TelemetryTx.SportTx.count = 0 ;
 			TelemetryTx.SportTx.busy = 0 ;

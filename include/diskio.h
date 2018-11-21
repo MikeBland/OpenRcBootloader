@@ -50,6 +50,7 @@
 #include "core_cm3.h"
 #endif
 #else
+#include "stm32f4xx.h"
 #include "core_cm4.h"
 #endif
 

@@ -66,6 +66,7 @@
 #include "logicio.h"
 
 #include "menucontrol.h"
+#include "..\stamp-app.h"
 
 __attribute__ ((section(".version"), used))
 // Temp edit to force a push
@@ -596,6 +597,17 @@ uint32_t fileList(uint8_t event, struct fileControl *fc )
 	return result ;
 }
 
+void displayDate( uint8_t y )
+{
+	uint8_t x ;
+	x = FW*12+4 ;
+	lcd_putc( x+11, y, '.' ) ;
+	lcd_putc( x+32, y, '.' ) ;
+	lcd_putsn_P( x, y, DATE_STR, 2 ) ;
+	lcd_putsn_P( x+15, y, &DATE_STR[3], 3 ) ;
+	lcd_putsn_P( x+36, y, &DATE_STR[7], 2 ) ;
+}
+
 
 void menuUpCoPro(uint8_t event)
 {
@@ -616,6 +628,7 @@ void menuUpCoPro(uint8_t event)
 //	}
 	
 	TITLE( "CoPro Update" ) ;
+	displayDate( 0 ) ;
 	mstate2.check_columns(event, 1 ) ;
 	
 	switch(event)

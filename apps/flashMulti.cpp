@@ -109,6 +109,7 @@
 #include "logicio.h"
 
 #include "menucontrol.h"
+#include "..\stamp-app.h"
 
 __attribute__ ((section(".version"), used))
 // Temp edit to force a push
@@ -119,12 +120,24 @@ const uint8_t Version[] =
 #endif
 #ifdef PCBX9D
  #ifdef REVPLUS
+  #ifdef REV9E
+	'A', 'P', 'P', 'X', '9', 'E'
+  #else
 	'A', 'P', 'P', 'X', '9', 'P'
+	#endif
  #else
   #ifdef PCBX7
-	'A', 'P', 'P', 'Q', 'X', '7'
+   #ifdef PCBT12
+		'A', 'P', 'P', 'T', '1', '2'
+	 #else
+		'A', 'P', 'P', 'Q', 'X', '7'
+	 #endif
   #else
+   #ifdef PCBXLITE
+	'A', 'P', 'P', 'X', 'L', 'T'
+   #else
 	'A', 'P', 'P', 'X', '9', 'D'
+   #endif
   #endif
  #endif
 #endif
@@ -136,8 +149,10 @@ const uint8_t Version[] =
 __attribute__ ((section(".text"), used))
 
 #if defined(REV9E) || defined(PCBX7) || defined(PCBSKY)
+#ifndef PCBT12
 extern void init_rotary_encoder() ;
 extern void checkRotaryEncoder() ;
+#endif
 #endif
 
 #if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
@@ -334,8 +349,13 @@ uint8_t XmegaSignature[4] ;
 #define CLEAR_TX_BIT_INT() GPIOA->BSRRH = 0x0400
 #define SET_TX_BIT_INT() GPIOA->BSRRL = 0x0400
 #else
+#ifdef PCBXLITE
+#define CLEAR_TX_BIT() GPIOC->BSRRL = 0x0040
+#define SET_TX_BIT() GPIOC->BSRRH = 0x0040
+#else
 #define CLEAR_TX_BIT() GPIOA->BSRRL = 0x0080
 #define SET_TX_BIT() GPIOA->BSRRH = 0x0080
+#endif
 #endif
 #endif
 
@@ -524,7 +544,7 @@ void initMultiMode()
 #ifdef PCBX9D
 	com1_Configure( 57600, MultiInvert ? SERIAL_NORM : SERIAL_INVERT, SERIAL_NO_PARITY ) ; // Kick off at 57600 baud
 	EXTERNAL_RF_ON() ;
-	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PIN_PORTA | PIN_LOW ) ;
+	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
 #endif
 }
 
@@ -575,7 +595,7 @@ void stopMultiMode()
 	disable_software_com1() ;
 //	com1_Configure( 57600, SERIAL_NORM, SERIAL_NO_PARITY ) ; // Kick off at 57600 baud
 	EXTERNAL_RF_OFF() ;
-	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PIN_PORTA | PIN_LOW ) ;
+	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
 #endif
 }
 
@@ -1365,9 +1385,31 @@ void menuUp1(uint8_t event)
 	}
 }
 
+void displayDate( uint8_t y )
+{
+	uint8_t x ;
+#ifdef PCBX9D
+#if defined(PCBX7) || defined(PCBXLITE)
+	x = FW*12+4 ;
+ #else
+	x = FW*20+4 ;
+ #endif
+#else
+	x = FW*12+4 ;
+#endif
+	lcd_putc( x+11, y, '.' ) ;
+	lcd_putc( x+32, y, '.' ) ;
+	lcd_putsn_P( x, y, DATE_STR, 2 ) ;
+	lcd_putsn_P( x+15, y, &DATE_STR[3], 3 ) ;
+	lcd_putsn_P( x+36, y, &DATE_STR[7], 2 ) ;
+}
+
+
 void menuUpMulti(uint8_t event)
 {
 	TITLE( "Multi Options" ) ;
+	displayDate( 7*FH ) ;
+
 	static MState2 mstate2 ;
 #if defined(PCBSKY) || defined(PCB9XT)
 	mstate2.check_columns(event, 4 ) ;
@@ -1457,7 +1499,7 @@ void menuUpMulti(uint8_t event)
 
 int main()
 {
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 	uint32_t i ;
 #endif
 #ifdef PCB9XT
@@ -1521,7 +1563,7 @@ int main()
 	start_timer0() ;
 #endif
 
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 	init_hw_timer()	;
 	__enable_irq() ;
 #endif // PCBX7
@@ -1534,7 +1576,7 @@ extern uint8_t OptrexDisplay ;
 #endif
 	lcd_clear() ;
 #ifdef PCBX9D
- #ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 	lcd_puts_Pleft( 0, "Update Multi" ) ;
  #else
 	lcd_puts_Pleft( 0, "\006Update Multi" ) ;
@@ -1551,7 +1593,9 @@ extern uint8_t OptrexDisplay ;
 	setup_switches() ;
 //	I2C_EE_Init() ;
  #ifndef PCBX7
+  #ifndef PCBXLITE
 	init_hw_timer()	;
+  #endif // PCBXLITE
  #endif // PCBX7
 #endif
 
@@ -1562,7 +1606,9 @@ extern uint8_t OptrexDisplay ;
 #endif
 
  #ifndef PCBX7
+  #ifndef PCBXLITE
 	__enable_irq() ;
+  #endif // PCBXLITE
  #endif // PCBX7
 
 
@@ -1629,7 +1675,7 @@ extern uint8_t OptrexDisplay ;
 	initWatchdog() ;
 #endif
 
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 	i = 40 ;
 	do
 	{
@@ -1647,7 +1693,9 @@ extern uint8_t OptrexDisplay ;
 	init_rotary_encoder() ;
 #endif
 #ifdef PCBX7
+#ifndef PCBT12
 	init_rotary_encoder() ;
+#endif
 #endif // PCBX7
 #ifdef PCBSKY
 	init_rotary_encoder() ;
@@ -1705,7 +1753,9 @@ extern uint8_t M64EncoderPosition ;
 
 //		maintenanceBackground() ;
 #if defined(REV9E) || defined(PCBX7) || defined(PCBSKY) || defined(PCBX12D)
+#ifndef PCBT12
 		checkRotaryEncoder() ;
+#endif
 #endif
 
 		if ( Tenms )
@@ -2095,7 +2145,12 @@ uint32_t multiUpdate()
 			}
 			else
 			{
-				if ( ++AllSubState > 80 )
+				if ( ++AllSubState == 80 )
+				{
+					MultiInvert ^= 1 ;
+					initMultiMode() ;
+				}
+				if ( AllSubState > 160 )
 				{
 					MultiResult = 1 ;
 					MultiState = MULTI_DONE ;

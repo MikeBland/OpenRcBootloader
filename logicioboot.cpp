@@ -46,7 +46,9 @@
 #ifdef PCBX12D
 #include "stm32f4xx.h"
 #include "core_cm4.h"
+#include "stm32f4xx_gpio.h"
 #include "radio.h"
+#include "hal.h"
 #endif
 
 #include "logicio.h"
@@ -130,7 +132,7 @@ void configure_pins( uint32_t pins, uint16_t config )
 #endif
 
 
-#if ( defined(PCBX9D) || defined(PCB9XT) )
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
 void configure_pins( uint32_t pins, uint16_t config )
 {
 	uint32_t address ;
@@ -425,8 +427,13 @@ void init_keys()
 #ifdef PCBX7
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
+ #ifdef PCBT12
+	configure_pins( 0x008C, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+	configure_pins( 0x0E00, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+ #else
 	configure_pins( 0x008C, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
 	configure_pins( 0x0400, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+ #endif
 #else // PCBX7
 #ifdef REV9E	
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
@@ -434,10 +441,15 @@ void init_keys()
 	configure_pins( PIN_BUTTON_MENU | PIN_BUTTON_EXIT | PIN_BUTTON_PAGE, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
 	configure_pins( PIN_BUTTON_ENCODER, PIN_INPUT | PIN_PULLUP | PIN_PORTF ) ;
 #else
+#ifdef PCBXLITE
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
+	configure_pins( 0x7D80, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+#else // PCBXLITE
 // Buttons PE10, 11, 12, PD2, 3, 7
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
 	configure_pins( 0x3C00, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
 	configure_pins( 0x008C, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
+#endif // PCBXLITE
 #endif
 #endif // PCBX7
 }
@@ -448,11 +460,68 @@ uint32_t read_keys()
 	register uint32_t x ;
 	register uint32_t y ;
 
+#ifdef PCBXLITE
+	x = GPIOE->IDR ; // 10 RIGHT(+), 11 LEFT(-), 12 ENT(DOWN)
+	y = 0 ;
+	
+	// Still to handle the enter button
+	if ( x & PIN_BUTTON_MENU )
+	{
+		y |= 0x02 << KEY_MENU ;			// MENU
+	}
+	if ( x & PIN_BUTTON_EXIT )
+	{
+		y |= 0x02 << KEY_EXIT ;			// EXIT
+	}
+	if ( x & PIN_BUTTON_LEFT )
+	{
+		y |= 0x02 << KEY_LEFT ;		// LEFT
+	}
+	if ( x & PIN_BUTTON_RIGHT )
+	{
+		y |= 0x02 << KEY_RIGHT ;		// RIGHT
+	}
+	if ( x & PIN_BUTTON_UP )
+	{
+		y |= 0x02 << KEY_UP ;			// up
+	}
+	if ( x & PIN_BUTTON_DOWN )
+	{
+		y |= 0x02 << KEY_DOWN ;		// DOWN
+	}
+#else // PCBXLITE
 	x = GPIOD->IDR ; // 7 MENU, 3 PAGE(UP), 2 EXIT
 	
 	y = 0 ;
 	
 #ifdef PCBX7
+ #ifdef PCBT12
+	if ( x & PIN_BUTTON_EXIT )
+	{
+		y |= 0x02 << KEY_EXIT ;			// EXIT
+	}
+	if ( x & PIN_BUTTON_RIGHT )
+	{
+		y |= 0x02 << KEY_RIGHT ;		// RIGHT
+	}
+	if ( x & PIN_BUTTON_LEFT )
+	{
+		y |= 0x02 << KEY_LEFT ;		// RIGHT
+	}
+	x = GPIOE->IDR ;
+	if ( x & PIN_BUTTON_MENU )
+	{
+		y |= 0x02 << KEY_MENU ;			// MENU
+	}
+	if ( x & PIN_BUTTON_UP )
+	{
+		y |= 0x02 << KEY_UP ;			// up
+	}
+	if ( x & PIN_BUTTON_DOWN )
+	{
+		y |= 0x02 << KEY_DOWN ;		// DOWN
+	}
+ #else
 	if ( x & PIN_BUTTON_MENU )
 	{
 		y |= 0x02 << KEY_MENU ;			// MENU
@@ -471,6 +540,7 @@ uint32_t read_keys()
 		y |= 0x02 << KEY_ENTER ;	// RIGHT
 	}
 	y |= (0x02 << KEY_PLUS) | (0x02 << KEY_MINUS) ;
+ #endif
 #else
 	
 	if ( x & PIN_BUTTON_MENU )
@@ -514,6 +584,7 @@ uint32_t read_keys()
 	}
 #endif
 #endif // PCBX7
+#endif // PCBXLITE
 	return y ;
 }
 
@@ -529,7 +600,11 @@ uint32_t readTrainerSwitch( void )
 	if ( GPIOD->IDR & PIN_SW_H )
  #endif
 #else
+#ifdef PCBXLITE
+	if ( GPIOE->IDR & PIN_BUTTON_SHIFT )
+#else
 	if ( GPIOE->IDR & PIN_SW_H )
+#endif
 #endif
 #endif // PCBX7
 	{
@@ -550,6 +625,12 @@ void setup_switches()
 	configure_pins( 0xE087, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
 	 
 #else // PCBX7
+#ifdef PCBXLITE
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
+	configure_pins( 0x000F, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+	configure_pins( 0x0060, PIN_INPUT | PIN_PULLUP | PIN_PORTA ) ;
+	configure_pins( 0x0030, PIN_INPUT | PIN_PULLUP | PIN_PORTB ) ;
+#else // PCBXLITE
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ; 		// Enable portB clock
 #ifdef REVPLUS
@@ -573,6 +654,7 @@ void setup_switches()
  	configure_pins( PIN_SW_H, PIN_INPUT | PIN_PULLUP | PIN_PORTD ) ;
  #endif
 #endif
+#endif // PCBXLITE
 #endif // PCBX7
 	
 }
@@ -599,6 +681,51 @@ uint32_t readTrainerSwitch( void )
 
 #endif // PCB9XT
 
+#ifdef PCBX12D
 
+void init_keys()
+{
+	configure_pins( KEYS_GPIO_PIN_MENU | KEYS_GPIO_PIN_RIGHT, PIN_INPUT | PIN_PULLUP | PIN_PORTC ) ;
+	configure_pins( KEYS_GPIO_PIN_EXIT | KEYS_GPIO_PIN_LEFT | KEYS_GPIO_PIN_DOWN, PIN_INPUT | PIN_PULLUP | PIN_PORTI ) ;
+	configure_pins( KEYS_GPIO_PIN_UP, PIN_INPUT | PIN_PULLUP | PIN_PORTG ) ;
+}
 
+// Reqd. bit 6 LEFT, 5 RIGHT, 4 UP, 3 DOWN 2 EXIT 1 MENU
+uint32_t read_keys()
+{
+	register uint32_t x ;
+	register uint32_t y ;
+
+	x = GPIOC->IDR ;
+	y = 0 ;
+	if ( x & KEYS_GPIO_PIN_MENU )
+	{
+		y |= 0x02 << KEY_MENU ;			// MENU
+	}
+	if ( x & KEYS_GPIO_PIN_RIGHT )
+	{
+		y |= 0x02 << KEY_PAGE ;	// RIGHT
+	}
+	x = GPIOI->IDR ;
+	if ( x & KEYS_GPIO_PIN_LEFT )
+	{
+		y |= 0x02 << KEY_ENTER ;		// LEFT
+	}
+	if ( x & KEYS_GPIO_PIN_EXIT )
+	{
+		y |= 0x02 << KEY_EXIT ;			// EXIT
+	}
+	if ( x & KEYS_GPIO_PIN_DOWN )
+	{
+		y |= 0x02 << KEY_MINUS ;		// DOWN
+	}
+	x = GPIOG->IDR ;
+	if ( x & KEYS_GPIO_PIN_UP )
+	{
+		y |= 0x02 << KEY_PLUS ;			// up
+	}
+	return y ;
+}
+
+#endif
 

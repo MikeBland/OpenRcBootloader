@@ -596,7 +596,12 @@ CPPFLAGS += $(patsubst %,-I%,$(EXTRAINCDIRS))
 # makefile rules
 #
 
-all: size_before $(AOBJS) $(COBJS) $(CPPOBJS) $(FULL_PRJ).elf $(FULL_PRJ).lss $(FULL_PRJ).bin $(FULL_PRJ).app size
+all: stamp size_before $(AOBJS) $(COBJS) $(CPPOBJS) $(FULL_PRJ).elf $(FULL_PRJ).lss $(FULL_PRJ).bin $(FULL_PRJ).app size
+
+# Build stamp-file
+stamp:
+	@echo "Generate Version-stamp:"
+	@echo "#define DATE_STR \"`date +%d.%b.%y`\"" > ../stamp-app.h
 
 #begin:
 #	@echo "Includes"

@@ -24,7 +24,7 @@
 #define	WriteData(x)	 AspiData(x)
 #define	WriteCommand(x)	 AspiCmd(x)
 
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBXLITE)
 
 #define LCD_CONTRAST_OFFSET            20
 #define RESET_WAIT_DELAY_MS            300 // Wait time after LCD reset before first command
@@ -116,15 +116,28 @@ void lcdHardwareInit()
 void lcdStart()
 {
   lcdWriteCommand(0xe2); // (14) Soft reset
+#ifdef PCBT12
+	lcdWriteCommand(0xA0); // Set seg
+  lcdWriteCommand(0xC8); // Set com
+#else  
   lcdWriteCommand(0xa1); // Set seg
   lcdWriteCommand(0xc0); // Set com
+#endif
   lcdWriteCommand(0xf8); // Set booster
   lcdWriteCommand(0x00); // 5x
   lcdWriteCommand(0xa3); // Set bias=1/6
   lcdWriteCommand(0x22); // Set internal rb/ra=5.0
   lcdWriteCommand(0x2f); // All built-in power circuits on
   lcdWriteCommand(0x81); // Set contrast
+#ifdef PCBXLITE
+  lcdWriteCommand(0x30); // Set Vop
+#else
+#ifdef PCBT12
+  lcdWriteCommand(0x2A); // Set Vop
+#else  
   lcdWriteCommand(0x36); // Set Vop
+#endif
+#endif
   lcdWriteCommand(0xa6); // Set display mode
 }
 
@@ -140,7 +153,11 @@ void refreshDisplay()
   for (uint8_t y=0; y < 8; y++, p+=LCD_W) {
     lcdWriteCommand(0x10); // Column addr 0
     lcdWriteCommand(0xB0 | y); // Page addr y
+#ifdef PCBT12
+    lcdWriteCommand(0x0);
+#else
     lcdWriteCommand(0x04);
+#endif    
     
     LCD_NCS_LOW();
     LCD_A0_HIGH();
@@ -204,6 +221,20 @@ void lcdReset()
 
 static void backlightInit()
 {
+#ifdef PCBXLITE
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ;
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN ;    // Enable clock
+	configure_pins( BACKLIGHT_GPIO_PIN, PIN_PERIPHERAL | PIN_PER_1 | PIN_PORTA | PIN_PUSHPULL | PIN_OS2 | PIN_NO_PULLUP ) ;
+  TIM1->ARR = 100;
+  TIM1->PSC = (Peri1_frequency*Timer_mult1) / 10000 - 1 ;
+  TIM1->CCMR1 = TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2; // PWM
+  TIM1->CCER = TIM_CCER_CC1E;
+  TIM1->CCR1 = 100;
+	TIM1->BDTR |= TIM_BDTR_MOE ;
+  TIM1->EGR = 0;
+  TIM1->CR1 = TIM_CR1_CEN; // Counter enable
+
+#else	
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ;
   RCC->APB1ENR |= RCC_APB1ENR_TIM4EN ;    // Enable clock
   GPIO_InitTypeDef GPIO_InitStructure;
@@ -221,6 +252,7 @@ static void backlightInit()
   TIM4->CCR2 = 100;
   TIM4->EGR = 0;
   TIM4->CR1 = TIM_CR1_CEN; // Counter enable
+#endif
 }
 
 
@@ -294,6 +326,25 @@ void lcdSetRefVolt(uint8_t val)
 
 uint16_t BacklightBrightness ;
 
+
+
+#ifdef PCBXLITE
+void backlight_on()
+{
+	TIM1->CCR1 = 100 - BacklightBrightness ;
+}
+
+void backlight_off()
+{
+	TIM1->CCR1 = 0 ;
+}
+
+void backlight_set( uint16_t brightness )
+{
+	BacklightBrightness = brightness ;
+	TIM1->CCR1 = 100 - BacklightBrightness ;
+}
+#else // PCBXLITE
 void backlight_on()
 {
 	TIM4->CCR2 = 100 - BacklightBrightness ;
@@ -309,6 +360,7 @@ void backlight_set( uint16_t brightness )
 	BacklightBrightness = brightness ;
 	TIM4->CCR2 = 100 - BacklightBrightness ;
 }
+#endif // PCBXLITE
 
 
 #else // PCBX7

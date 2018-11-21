@@ -112,7 +112,7 @@ __attribute__ ((section(".version"), used))
 // Temp edit to force a push
 const uint8_t Version[] =
 {
-	'B', 'O', 'O', 'T', '2', '9'
+	'B', 'O', 'O', 'T', '3', '0'
 } ;
 
 __attribute__ ((section(".text"), used))
@@ -138,63 +138,81 @@ extern void usbMassStorage( void ) ;
 
 void createFat( uint32_t flashSize ) ;
 
-#if ( defined(PCBSKY) || defined(PCB9XT) )
-#define BOOT_KEY_UP			KEY_UP
-#define BOOT_KEY_DOWN		KEY_DOWN
-#define BOOT_KEY_LEFT		KEY_LEFT
-#define BOOT_KEY_RIGHT	KEY_RIGHT
-#define BOOT_KEY_MENU		KEY_MENU
-#define BOOT_KEY_EXIT		KEY_EXIT
-#define DISPLAY_CHAR_WIDTH	21
-#endif
+//#if ( defined(PCBSKY) || defined(PCB9XT) )
+//#define BOOT_KEY_UP			KEY_UP
+//#define BOOT_KEY_DOWN		KEY_DOWN
+//#define BOOT_KEY_LEFT		KEY_LEFT
+//#define BOOT_KEY_RIGHT	KEY_RIGHT
+//#define BOOT_KEY_MENU		KEY_MENU
+//#define BOOT_KEY_EXIT		KEY_EXIT
+//#define DISPLAY_CHAR_WIDTH	21
+//#endif
 
-#ifdef PCBX12D
-#define BOOT_KEY_UP			KEY_PLUS
-#define BOOT_KEY_DOWN		KEY_MINUS
-#define BOOT_KEY_LEFT		KEY_ENTER
-#define BOOT_KEY_RIGHT	KEY_PAGE
-#define BOOT_KEY_MENU		KEY_MENU
-#define BOOT_KEY_EXIT		KEY_EXIT
+//#ifdef PCBX12D
+//#define BOOT_KEY_UP			KEY_PLUS
+//#define BOOT_KEY_DOWN		KEY_MINUS
+//#define BOOT_KEY_LEFT		KEY_ENTER
+//#define BOOT_KEY_RIGHT	KEY_PAGE
+//#define BOOT_KEY_MENU		KEY_MENU
+//#define BOOT_KEY_EXIT		KEY_EXIT
 
-#define DISPLAY_CHAR_WIDTH	21
+//#define DISPLAY_CHAR_WIDTH	21
 
-#endif
+//#endif
 
-#ifdef PCBX9D
-#ifdef REV9E
-#define BOOT_KEY_UP			KEY_PLUS
-#define BOOT_KEY_DOWN		KEY_MINUS
-#define BOOT_KEY_LEFT		KEY_ENTER
-#define BOOT_KEY_RIGHT	KEY_PAGE
-#define BOOT_KEY_MENU		KEY_MENU
-#define BOOT_KEY_EXIT		KEY_EXIT
-#else
-#ifdef PCBX7
-#define BOOT_KEY_UP			KEY_PLUS
-#define BOOT_KEY_DOWN		KEY_MINUS
-#define BOOT_KEY_LEFT		KEY_MENU
-#define BOOT_KEY_RIGHT	KEY_PAGE
-#define BOOT_KEY_MENU		KEY_ENTER
-#define BOOT_KEY_EXIT		KEY_EXIT
-#else
-#define BOOT_KEY_UP			KEY_MENU
-#define BOOT_KEY_DOWN		KEY_EXIT
-#define BOOT_KEY_LEFT		KEY_PAGE
-#define BOOT_KEY_RIGHT	KEY_MINUS
-#define BOOT_KEY_MENU		KEY_PLUS
-#define BOOT_KEY_EXIT		KEY_ENTER
-#endif
-#endif
-#ifdef PCBX7
-#define DISPLAY_CHAR_WIDTH	21
-#else // PCBX7
-#ifdef REV9E
-#define DISPLAY_CHAR_WIDTH	35
-#else
-#define DISPLAY_CHAR_WIDTH	31
-#endif
-#endif // PCBX7
-#endif
+//#ifdef PCBX9D
+//#ifdef REV9E
+//#define BOOT_KEY_UP			KEY_PLUS
+//#define BOOT_KEY_DOWN		KEY_MINUS
+//#define BOOT_KEY_LEFT		KEY_ENTER
+//#define BOOT_KEY_RIGHT	KEY_PAGE
+//#define BOOT_KEY_MENU		KEY_MENU
+//#define BOOT_KEY_EXIT		KEY_EXIT
+//#else
+//#ifdef PCBX7
+// #ifdef PCBT12
+//#define BOOT_KEY_UP			KEY_UP
+//#define BOOT_KEY_DOWN		KEY_DOWN
+//#define BOOT_KEY_LEFT		KEY_LEFT
+//#define BOOT_KEY_RIGHT	KEY_RIGHT
+//#define BOOT_KEY_MENU		KEY_MENU
+//#define BOOT_KEY_EXIT		KEY_EXIT
+// #else
+//#define BOOT_KEY_UP			KEY_PLUS
+//#define BOOT_KEY_DOWN		KEY_MINUS
+//#define BOOT_KEY_LEFT		KEY_MENU
+//#define BOOT_KEY_RIGHT	KEY_PAGE
+//#define BOOT_KEY_MENU		KEY_ENTER
+//#define BOOT_KEY_EXIT		KEY_EXIT
+// #endif
+//#else
+//#ifdef PCBXLITE
+//#define BOOT_KEY_UP			KEY_UP
+//#define BOOT_KEY_DOWN		KEY_DOWN
+//#define BOOT_KEY_LEFT		KEY_LEFT
+//#define BOOT_KEY_RIGHT	KEY_RIGHT
+//#define BOOT_KEY_MENU		KEY_MENU
+//#define BOOT_KEY_EXIT		KEY_EXIT
+//#else
+//#define BOOT_KEY_UP			KEY_MENU
+//#define BOOT_KEY_DOWN		KEY_EXIT
+//#define BOOT_KEY_LEFT		KEY_PAGE
+//#define BOOT_KEY_RIGHT	KEY_MINUS
+//#define BOOT_KEY_MENU		KEY_PLUS
+//#define BOOT_KEY_EXIT		KEY_ENTER
+//#endif
+//#endif
+//#endif
+//#if defined(PCBX7) || defined(PCBXLITE)
+//#define DISPLAY_CHAR_WIDTH	21
+//#else // PCBX7
+//#ifdef REV9E
+//#define DISPLAY_CHAR_WIDTH	33
+//#else
+//#define DISPLAY_CHAR_WIDTH	31
+//#endif
+//#endif // PCBX7
+//#endif
 
 // states
 #define ST_MENU						0
@@ -208,15 +226,17 @@ void createFat( uint32_t flashSize ) ;
 #define ST_LOAD_APP				8
 #define ST_USB						10
 #define ST_REBOOT					11
-
+#define ST_WRITE_EEPROM		12
 
 #define MENU_NOTHING	0
 #define MENU_EXIT			1
 #define MENU_FLASH		2
 #define MENU_RUNAPP		3
+#define MENU_EEPROM		4
 
 #define UPDATE_TYPE_FLASH		0
 #define UPDATE_TYPE_RUNAPP	1
+#define UPDATE_TYPE_EEPROM	2
 
 
 /*----------------------------------------------------------------------------
@@ -270,6 +290,10 @@ extern uint32_t EepromBlocked ;
 
 extern void init_spi( void ) ;
 extern void writeBlock( void ) ;
+
+#ifdef PCBX9D
+void I2C_EE_BufferWrite(uint8_t* pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite) ;
+#endif
 
 
 /*----------------------------------------------------------------------------
@@ -943,7 +967,11 @@ uint8_t flashFile( uint32_t index )
 #ifdef PCBSKY
 	if ( ( event == EVT_KEY_LONG(BOOT_KEY_MENU) ) || ( event==EVT_KEY_BREAK(BTN_RE) ) )
 #else
+ #ifdef REV9E
+	if ( ( event == EVT_KEY_LONG(BOOT_KEY_MENU) ) || ( event==EVT_KEY_BREAK(BTN_RE) ) )
+ #else
 	if ( event == EVT_KEY_LONG(BOOT_KEY_MENU) )
+ #endif
 #endif
 	{
 		fr = openFirmwareFile( index ) ;
@@ -1052,12 +1080,42 @@ void ledBlue()
 }
 #endif // PCBX7
 
+#if defined (PCBXLITE)
+void ledOff()
+{
+  GPIO_SetBits(LED_RED_GPIO, LED_RED_GPIO_PIN);
+  GPIO_SetBits(LED_BLUE_GPIO, LED_BLUE_GPIO_PIN);
+  GPIO_SetBits(LED_GREEN_GPIO, LED_GREEN_GPIO_PIN);
+}
+
+void ledRed()
+{
+  ledOff();
+  GPIO_ResetBits(LED_RED_GPIO, LED_RED_GPIO_PIN);
+}
+
+void ledGreen()
+{
+  ledOff();
+  GPIO_ResetBits(LED_GREEN_GPIO, LED_GREEN_GPIO_PIN);
+}
+
+void ledBlue()
+{
+  ledOff();
+  GPIO_ResetBits(LED_BLUE_GPIO, LED_BLUE_GPIO_PIN);
+}
+#endif // PCBXLITE
+
 uint32_t menu()
 {
 	static uint32_t position = 3*FH ;
 	
 	lcd_puts_Pleft( 3*FH, "  Flash Firmware" );
 	lcd_puts_Pleft( 4*FH, "  Run App" );
+#ifdef PCBX9D
+	lcd_puts_Pleft( 5*FH, "  Restore EEPROM" );
+#endif
 	uint8_t event = getEvent() ;
   
 	switch(event)
@@ -1065,6 +1123,12 @@ uint32_t menu()
 		case EVT_KEY_FIRST(BOOT_KEY_MENU):
 		case EVT_KEY_BREAK(BTN_RE):
 			killEvents( event ) ;
+#ifdef PCBX9D
+			if (position == 5*FH)
+			{
+				return MENU_EEPROM ;
+			}
+#endif
 			return (position == 3*FH) ? MENU_FLASH : MENU_RUNAPP ;
 		break ;
 		
@@ -1073,9 +1137,13 @@ uint32_t menu()
 			return MENU_EXIT ;
 		break ;
     case EVT_KEY_FIRST(BOOT_KEY_DOWN):
+#ifdef PCBX9D
+			if ( position < 5*FH )
+#else
 			if ( position < 4*FH )
+#endif
 			{
-				position += FH ;				
+				position += FH ;
 			}
 		break ;
     
@@ -1085,12 +1153,19 @@ uint32_t menu()
 				position -= FH ;				
 			}
 		break ;
+
+		case EVT_KEY_REPT( KEY_TRN ) :
+			killEvents( event ) ;
+		break ;
+
+		case EVT_KEY_FIRST(KEY_TRN):
+			SDcardDisabled = SDcardDisabled ? 0 : 1;
+		break ;
 				 
 	}
 	lcd_char_inverse( 2*FW, position, 14*FW, 0 ) ;
 	return MENU_NOTHING ;
 }
-
 
 int main()
 {
@@ -1101,7 +1176,12 @@ int main()
 //	console9xtInit() ;
 //#endif
 
-#if ( defined(PCBX9D) || defined(PCB9XT) )
+#if defined (PCBXLITE)
+	configure_pins( LED_GREEN_GPIO_PIN|LED_BLUE_GPIO_PIN|LED_RED_GPIO_PIN, PIN_PORTE| PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 ) ;
+	ledBlue() ;
+#endif // PCBXLITE
+
+#if ( defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) )
   uint8_t TenCount = 2 ;
 #endif			
   uint8_t maxhsize = DISPLAY_CHAR_WIDTH ;
@@ -1118,7 +1198,7 @@ int main()
 #endif			
 	uint32_t firmwareWritten = 0 ;
 
-#if ( defined(PCBX9D) || defined(PCB9XT) )
+#if ( defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) )
 	wdt_reset() ;
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
 #endif
@@ -1167,7 +1247,7 @@ int main()
 	start_timer0() ;
 #endif
 
-#ifdef PCBX7
+#if (defined(PCBX7) || defined(PCBXLITE))
 	init_hw_timer()	;
 	__enable_irq() ;
 #endif // PCBX7
@@ -1180,7 +1260,7 @@ extern uint8_t OptrexDisplay ;
 #endif
 	lcd_clear() ;
 #ifdef PCBX9D
- #ifdef PCBX7
+ #if (defined(PCBX7) || defined(PCBXLITE))
 	lcd_puts_Pleft( 0, "Boot Loader" ) ;
  #else
 	lcd_puts_Pleft( 0, "\006Boot Loader" ) ;
@@ -1197,7 +1277,9 @@ extern uint8_t OptrexDisplay ;
 	setup_switches() ;
 	I2C_EE_Init() ;
  #ifndef PCBX7
+ #ifndef PCBXLITE
 	init_hw_timer()	;
+ #endif // PCBXLITE
  #endif // PCBX7
 #endif
 
@@ -1208,7 +1290,9 @@ extern uint8_t OptrexDisplay ;
 #endif
 
  #ifndef PCBX7
+ #ifndef PCBXLITE
 	__enable_irq() ;
+ #endif // PCBXLITE
  #endif // PCBX7
 
 #ifdef PCB9XT
@@ -1314,7 +1398,9 @@ extern uint8_t OptrexDisplay ;
 	init_rotary_encoder() ;
 #endif
 #ifdef PCBX7
+ #ifndef PCBT12
 	init_rotary_encoder() ;
+ #endif // PCBT12
 #endif // PCBX7
 #ifdef PCBSKY
 	init_rotary_encoder() ;
@@ -1344,7 +1430,9 @@ extern uint8_t OptrexDisplay ;
 	checkM64() ;
 #endif
 #if defined(REV9E) || defined(PCBX7) || defined(PCBSKY)
+ #ifndef PCBT12
 		checkRotaryEncoder() ;
+ #endif
 #endif
 
 		if ( Tenms )
@@ -1373,7 +1461,6 @@ extern uint8_t OptrexDisplay ;
 			lcd_putc( 13*FW, 0, Version[4] ) ;
 			lcd_putc( 15*FW-2, 0, Version[5] ) ;
 #endif
-	 
 			if ( SDcardDisabled )
 			{
 				if ( BlinkCounter & 512 )
@@ -1381,6 +1468,37 @@ extern uint8_t OptrexDisplay ;
 					lcd_puts_Pleft( FH, "SD Card OFF" ) ;
 				}
 			}
+
+			if ( state != ST_USB )
+			{
+				if ( usbPlugged() )
+				{
+					state = ST_USB ;
+					usbPluggedIn( !SDcardDisabled ) ;
+				}
+			}
+			
+			if ( state == ST_USB )
+			{
+
+#ifdef WIDE_DISPLAY
+				lcd_puts_Pleft( 3*FH, "\012Connecting.." ) ;
+#else
+				lcd_puts_Pleft( 3*FH, "\004Connecting.." ) ;
+#endif
+				if ( usbPlugged() == 0 )
+				{
+					state = ST_MENU ;
+				}
+#ifdef PCBSKY
+				lcd_putc( 0, 6*FH, 'F' ) ;
+				lcd_putc( 6, 6*FH, '0' + FlashBlocked ) ;
+				lcd_putc( 0, 7*FH, 'E' ) ;
+				lcd_putc( 6, 7*FH, '0' + EepromBlocked ) ;
+//					lcd_outhex4(15, 7*FH, LastResult ) ;
+#endif
+			}
+
 
 			if ( sd_card_ready() )
 			{
@@ -1403,41 +1521,11 @@ extern uint8_t OptrexDisplay ;
 //#endif
 //#endif
 
-
 #ifdef PCBSKY
 				statuses = usbLunStat() ;
 #endif
 
-				if ( state != ST_USB )
-				{
-					if ( usbPlugged() )
-					{
-						state = ST_USB ;
-						usbPluggedIn( !SDcardDisabled ) ;
-					}
-				}
 				
-				if ( state == ST_USB )
-				{
-
-#ifdef WIDE_DISPLAY
-					lcd_puts_Pleft( 3*FH, "\012Connecting.." ) ;
-#else
-					lcd_puts_Pleft( 3*FH, "\004Connecting.." ) ;
-#endif
-					if ( usbPlugged() == 0 )
-					{
-						state = ST_MENU ;
-					}
-#ifdef PCBSKY
-					lcd_putc( 0, 6*FH, 'F' ) ;
-					lcd_putc( 6, 6*FH, '0' + FlashBlocked ) ;
-					lcd_putc( 0, 7*FH, 'E' ) ;
-					lcd_putc( 6, 7*FH, '0' + EepromBlocked ) ;
-//					lcd_outhex4(15, 7*FH, LastResult ) ;
-#endif
-				}
-
 				if ( state == ST_MENU )
 				{
 					i = menu() ;
@@ -1455,6 +1543,13 @@ extern uint8_t OptrexDisplay ;
 						UpdateItem = UPDATE_TYPE_RUNAPP ;
 						state = ST_START ;
 					}
+#ifdef PCBX9D
+					else if ( i == MENU_EEPROM )
+					{
+						UpdateItem = UPDATE_TYPE_EEPROM ;
+						state = ST_START ;
+					}
+#endif
 				}
 				 
 				if ( state == ST_START )
@@ -1475,7 +1570,16 @@ extern uint8_t OptrexDisplay ;
 				}
 				if ( state == ST_DIR_CHECK )
 				{
-					fr = f_chdir( (UpdateItem == UPDATE_TYPE_FLASH) ? (TCHAR *)"\\firmware" : (TCHAR *)"\\apps" ) ;
+#ifdef PCBX9D
+					if (UpdateItem == UPDATE_TYPE_EEPROM)
+					{
+						fr = f_chdir( "\\EEPROM" ) ;
+					}
+					else
+#endif
+					{
+						fr = f_chdir( (UpdateItem == UPDATE_TYPE_FLASH) ? (TCHAR *)"\\firmware" : (TCHAR *)"\\apps" ) ;
+					}
 					if ( fr == FR_OK )
 					{
 						state = ST_OPEN_DIR ;
@@ -1486,17 +1590,13 @@ extern uint8_t OptrexDisplay ;
 				{
 					uint8_t event = getEvent() ;
 #ifdef WIDE_DISPLAY
-					lcd_puts_Pleft( 16, "\010No Firmware Files" ) ;
+					lcd_puts_Pleft( 16, "\014No Files" ) ;
 #else
-					lcd_puts_Pleft( 16, "\002No Firmware Files" ) ;
+					lcd_puts_Pleft( 16, "\006No Files" ) ;
 #endif
-					if ( event == EVT_KEY_REPT( KEY_TRN ) )
+					if ( event == EVT_KEY_BREAK(BOOT_KEY_EXIT) )
 					{
-						killEvents( event ) ;
-					}
-					if ( event == EVT_KEY_FIRST( KEY_TRN ) )
-					{
-						SDcardDisabled = SDcardDisabled ? 0 : 1;
+						state = ST_MENU ;
 					}
 				}
 				if ( state == ST_OPEN_DIR )
@@ -1504,7 +1604,11 @@ extern uint8_t OptrexDisplay ;
 					fr = f_opendir( &Dj, (TCHAR *) "." ) ;
 					if ( fr == FR_OK )
 					{
+#ifdef PCBX9D
+						if ( (UpdateItem == UPDATE_TYPE_EEPROM) || (UpdateItem == UPDATE_TYPE_FLASH) )
+#else
 						if (UpdateItem == UPDATE_TYPE_FLASH)
+#endif
 						{
 							FIleExtension[0] = 'B' ;
 							FIleExtension[1] = 'I' ;
@@ -1612,7 +1716,11 @@ extern uint8_t OptrexDisplay ;
 #ifdef PCBSKY
 						if ( ( event == EVT_KEY_LONG(BOOT_KEY_MENU) ) || ( event==EVT_KEY_BREAK(BTN_RE) ) )
 #else
+ #ifdef REV9E
+						if ( ( event == EVT_KEY_LONG(BOOT_KEY_MENU) ) || ( event==EVT_KEY_BREAK(BTN_RE) ) )
+ #else
 						if ( event == EVT_KEY_LONG(BOOT_KEY_MENU) )
+ #endif
 #endif
 						{
 							// Select file to flash
@@ -1621,6 +1729,16 @@ extern uint8_t OptrexDisplay ;
 							{
 								state = ST_FLASH_CHECK ;
 							}
+#ifdef PCBX9D
+							else if (UpdateItem == UPDATE_TYPE_EEPROM)
+							{
+								state = ST_WRITE_EEPROM ;
+								firmwareAddress = 0 ;
+								FirmwareSize = 32768 ;
+								firmwareWritten = 0 ;
+								BlockCount = 0 ;
+							}
+#endif
 							else
 							{
 								state = ST_LOAD_APP ;
@@ -1795,26 +1913,54 @@ extern uint8_t OptrexDisplay ;
 #endif
 #ifdef PCBX9D
  #ifdef REVPLUS
+
 									if ( bytes[i+3] == 'X' )
 									{
 										if ( bytes[i+4] == '9' )
 										{
+  #ifdef REV9E
+											if ( bytes[i+5] == 'E' )
+  #else
 											if ( bytes[i+5] == 'P' )
+	#endif
  #else
   #ifdef PCBX7
+   #ifdef PCBT12
+									if ( bytes[i+3] == 'T' )
+									{
+										if ( bytes[i+4] == '1' )
+										{
+											if ( bytes[i+5] == '2' )
+	 #else
 									if ( bytes[i+3] == 'Q' )
 									{
 										if ( bytes[i+4] == 'X' )
 										{
 											if ( bytes[i+5] == '7' )
+	 #endif
   #else
+   #ifdef PCBXLITE
+									if ( bytes[i+3] == 'X' )
+									{
+										if ( bytes[i+4] == 'L' )
+										{
+											if ( bytes[i+5] == 'T' )
+   #else
 									if ( bytes[i+3] == 'X' )
 									{
 										if ( bytes[i+4] == '9' )
 										{
 											if ( bytes[i+5] == 'D' )
+   #endif
   #endif
  #endif
+#endif
+#ifdef PCBX12D
+									if ( bytes[i+3] == 'X' )
+									{
+										if ( bytes[i+4] == '1' )
+										{
+											if ( bytes[i+5] == '2' )
 #endif
 											{
 												break ;
@@ -1859,15 +2005,46 @@ extern uint8_t OptrexDisplay ;
 					}
 					state = ST_MENU ;
 				}
+#ifdef PCBX9D
+				if ( state == ST_WRITE_EEPROM )
+				{
+//					lcd_puts_Pleft( 3*FH, "Flashing" ) ;
+//					uint32_t width = FirmwareSize / 512 ;
+//					lcd_hline( 0, 5*FH-1, width+1 ) ;
+//					lcd_hline( 0, 6*FH, width+1 ) ;
+//					lcd_vline( width, 5*FH, 8 ) ;
+//					for ( i = 0 ; i < firmwareWritten ; i += 1 )
+//					{
+//						lcd_vline( i, 5*FH, 8 ) ;
+//					}
+//					if ( BlockCount == 0 )
+//					{
+//						fr = f_read( &FlashFile, (BYTE *)Block_buffer, 4096, &BlockCount ) ;
+//					}
+					
+					uint8_t event = getEvent() ;
+					lcd_puts_Pleft( 3*FH, "In Development" ) ;
+					if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
+					{
+						killEvents( event ) ;
+						state = ST_FILE_LIST ;
+					}
+
+void I2C_EE_BufferWrite(uint8_t* pBuffer, uint16_t WriteAddr, uint16_t NumByteToWrite) ;
+
+
+
+				}
+#endif
 			}
 
-#if ( defined(PCBX9D) || defined(PCB9XT) )
+#if ( defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) )
 			if ( --TenCount == 0 )
 			{
 				TenCount = 4 ;
 #endif			
 			refreshDisplay() ;
-#if ( defined(PCBX9D) || defined(PCB9XT) )
+#if ( defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) )
 			}
 #endif			
 			if ( PowerUpDelay < 200 )	// 2000 mS
@@ -1892,6 +2069,14 @@ extern uint8_t OptrexDisplay ;
 		}
 		if ( ( state < ST_FLASH_CHECK ) || (state == ST_FLASH_DONE) )
 		{
+			
+#ifdef PCBT12
+			if ( PowerUpDelay < 200 )	// 2000 mS
+			{
+				check_soft_power() ;
+			}
+			else
+#endif // PCBT12
 			if ( check_soft_power() == POWER_OFF )
 			{
 #ifdef PCBX7
@@ -1905,7 +2090,7 @@ extern void lcdOff() ;
 				}
 			}
 		}
-		if ( ( state < ST_FILE_LIST ) && (state != ST_MENU) )
+		if ( ( state < ST_FILE_LIST ) && ( (state != ST_MENU) || !sd_card_ready() ) )
 		{
 			uint8_t event = getEvent() ;
 			if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )

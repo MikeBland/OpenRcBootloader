@@ -84,15 +84,23 @@ else
     OBJDIR = a9xtobj
    else
     ifeq ($(PCB), X7)
-     OBJDIR = ax7obj
+     ifeq ($(T12), 1)
+      OBJDIR = at12obj
+	  else
+      OBJDIR = ax7obj
+	  endif
     else
-     ifeq ($(REVX), 1)
-      OBJDIR = arobj
+     ifeq ($(PCB), XLITE)
+      OBJDIR = axLobj
      else
-      ifeq ($(PCB), X9E)
-       OBJDIR = ax9eobj
+      ifeq ($(REVX), 1)
+       OBJDIR = arobj
       else
-       OBJDIR = aobj
+       ifeq ($(PCB), X9E)
+        OBJDIR = ax9eobj
+       else
+        OBJDIR = aobj
+       endif
       endif
      endif
     endif
@@ -168,18 +176,36 @@ else
      CPPDEFS += -DPCBX7 
      CPPDEFS += -DPCBX9D
      CPPDEFS += -DAPP
-     FULL_PRJ = $(PROJECT)_x7
-     EXTRAINCDIRS += include
-    EXTRAINCDIRS += ../include
-    else
-     LDSCRIPT = atmel_ramApp.ld
-     FULL_PRJ = $(PROJECT)_atmel
+     ifeq ($(T12), 1)
+      FULL_PRJ = $(PROJECT)_t12
+      CPPDEFS += -DPCBT12
+	  else
+      FULL_PRJ = $(PROJECT)_x7
+	  endif
      EXTRAINCDIRS += include
      EXTRAINCDIRS += ../include
-     TRGT = arm-none-eabi-
-     CPPDEFS += -DPCBSKY 
-     CPPDEFS += -DAPP
-     UDEFS = -Dat91sam3s8
+    else
+     ifeq ($(PCB), XLITE)
+      ARCH = ARM
+      LDSCRIPT = stm32_ramApp.ld
+      TRGT = arm-none-eabi-
+      CPPDEFS += -DHSE_VALUE=12000000
+      CPPDEFS += -DPCBXLITE 
+      CPPDEFS += -DPCBX9D
+      CPPDEFS += -DAPP
+      FULL_PRJ = $(PROJECT)_xlite
+      EXTRAINCDIRS += include
+      EXTRAINCDIRS += ../include
+     else
+      LDSCRIPT = atmel_ramApp.ld
+      FULL_PRJ = $(PROJECT)_atmel
+      EXTRAINCDIRS += include
+      EXTRAINCDIRS += ../include
+      TRGT = arm-none-eabi-
+      CPPDEFS += -DPCBSKY 
+      CPPDEFS += -DAPP
+      UDEFS = -Dat91sam3s8
+     endif
     endif
    endif
   endif
@@ -470,6 +496,48 @@ ASRC = ../x9d/startup_stm32f2xx.s
 #ASRC = X12D/startup_stm32f42_43xxx.s
 #
   else
+ ifeq ($(PCB), XLITE)
+SRC  = ../system_stm32f2xx.c \
+       ../stm32f2xx_rcc.c \
+       ../stm32f2xx_gpio.c \
+       ../stm32f2xx_spi.c \
+       ../misc.c
+
+#       ../usb/usb_core.c \
+#       ../usb/usb_dcd.c \
+#       ../usb/usb_dcd_int.c \
+#       ../usb/usbd_core.c \
+#       ../usb/usbd_ioreq.c \
+#       ../usb/usbd_req.c \
+#       ../usb/usbd_msc_data.c \
+#       ../usb/usbd_msc_scsi.c \
+#       ../usb/usbd_msc_bot.c \
+#       ../usb/usbd_msc_core.c \
+#       ../usb/usbd_desc.c \
+#       ../usb/usb_bsp.c
+
+CPPSRC = ../lcdboot.cpp \
+         ../aspi.cpp \
+         ../ff.cpp \
+			../ff_lfn.cpp \
+         ../x9ddiskio.cpp \
+         ../lcd_driver.cpp \
+         ../driversboot.cpp \
+         ../logicioboot.cpp \
+         ../power.cpp \
+			menucontrol.cpp \
+			Sport.cpp \
+         ChangId.cpp
+
+
+#       	i2c_ee.cpp \
+#         usbd_usr.cpp \
+#         usbd_storage_msd.cpp \
+
+# List ASM source files here
+ASRC = x9d/startup_stm32f2xx.s
+#
+  else
 
 # List C source files here
 SRC  = ../core_cm3.c \
@@ -504,6 +572,7 @@ CPPSRC = ../lcdboot.cpp \
 # List ASM source files here
 ASRC =
 
+endif
 
 #endif
 #endif
@@ -663,6 +732,7 @@ clean:
 	-rm -f a9xtobj/*.*
 	-rm -f ax9eobj/*.*
 	-rm -f ax7obj/*.*
+	-rm -f t12obj/*.*
 	-rm -f *.elf
 	-rm -f *.map
 	-rm -f *.hex

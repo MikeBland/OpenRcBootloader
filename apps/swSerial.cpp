@@ -9,7 +9,12 @@
 #include "stm32f2xx.h"
 #include "stm32f2xx_gpio.h"
 #include "stm32f2xx_rcc.h"
-//#include "stm32f2xx_usart.h"
+
+#ifdef PCB9XT
+#include "stm32f2xx_usart.h"
+#define USART_FLAG_ERRORS (USART_FLAG_ORE | USART_FLAG_FE | USART_FLAG_PE)
+#endif
+
 #endif
 
 #include "radio.h"
@@ -592,7 +597,7 @@ static void consoleInit()
 	GPIOA->MODER = (GPIOA->MODER & 0xFFFFFFF0 ) | 0x0000000A ;	// Alternate func.
 	GPIOA->AFR[0] = (GPIOA->AFR[0] & 0xFFFFFF00 ) | 0x00000088 ;	// Alternate func.
 	UART4->BRR = Peri1_frequency / CONSOLE_BAUDRATE ;		// 97.625 divider => 19200 baud
-	UART4->CR1 = USART_CR1_UE | USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE ;
+	UART4->CR1 = USART_CR1_UE | USART_CR1_RXNEIE | USART_CR1_RE ;
 	UART4->CR2 = 0 ;
 	UART4->CR3 = 0 ;
 	NVIC_SetPriority( UART4_IRQn, 2 ) ; // Changed to 3 for telemetry receive
@@ -622,6 +627,28 @@ void com2_Configure( uint32_t baudrate, uint32_t invert, uint32_t parity )
 	UART4SetBaudrate( baudrate ) ;
 	com2Parity( parity ) ;
 }
+
+extern "C" void UART4_IRQHandler()
+{
+  uint32_t status;
+  uint8_t data;
+	USART_TypeDef *puart = UART4 ;
+
+  status = puart->SR ;
+	
+  while (status & (USART_FLAG_RXNE | USART_FLAG_ERRORS))
+	{
+    data = puart->DR;
+
+    if (!(status & USART_FLAG_ERRORS))
+		{
+			put_fifo128( &Com2_fifo, data ) ;
+		}
+    status = puart->SR ;
+	}
+}
+
+
 #endif
 
 #endif

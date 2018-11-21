@@ -56,7 +56,7 @@ uint8_t DisplayBuf[DISPLAY_W*DISPLAY_H/8] ;
 #define DISPLAY_END (DisplayBuf+sizeof(DisplayBuf))
 
 #ifdef PCBX9D
-#ifdef PCBX7
+#if defined(PCBX7) || defined (PCBXLITE)
 #define X9D_OFFSET		0
 #else
 #define X9D_OFFSET		11
@@ -388,6 +388,7 @@ uint8_t lcd_buf[DISPLAY_W*DISPLAY_H/8];
 #if PCBX9D
 #ifndef REV9E
  #ifndef PCBX7
+  #ifndef PCBXLITE
 const uint8_t arrows[] = {
 10,64,80,
 0xFF,0xF7,0xF3,0xF9,0x00,0x00,0xF9,0xF3,0xF7,0xFF,
@@ -442,7 +443,8 @@ void lcd_img( uint8_t i_x, uint8_t i_y, uint8_t *imgdat, uint8_t idx )
   
 	lcd_bitmap( i_x, i_y, q, w, hb ) ;
 }
- #endif // PCBX7
+  #endif // nPCBXLITE
+ #endif // nPCBX7
 #endif	// nREV9E
 #endif
 
@@ -452,9 +454,11 @@ void lcd_clear()
 #if PCBX9D
 #ifndef REV9E
  #ifndef PCBX7
+  #ifndef PCBXLITE
 	lcd_img( 212-X9D_OFFSET, 0, (uint8_t *) arrows, 0 ) ;
 	lcd_img( 212-X9D_OFFSET-10, 0, (uint8_t *) arrows, 1 ) ;
- #endif // PCBX7
+  #endif // nPCBXLITE
+ #endif // nPCBX7
 #endif	// nREV9E
 #endif // PCBX9D
 }
