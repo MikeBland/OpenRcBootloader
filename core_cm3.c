@@ -807,19 +807,42 @@ uint32_t __STREXW(uint32_t value, uint32_t *addr)
 #ifdef BOOT
 void run_application()
 {
-  __ASM(" mov.w	r1, #4227072");		// 0x408000
-  __ASM(" movw	r0, #60680");			// 0xED08
-  __ASM(" movt	r0, #57344");			// 0xE000
-  __ASM(" str	r1, [r0, #0]");			// Set the VTOR
+	uint32_t v ;
+	v = 0x408000 ;
+	v = * ( (uint32_t *)v ) ;
+	if ( ( v == 0x20010000 ) || ( v == 0x2000c000 ) )
+	{
+  	__ASM(" mov.w	r1, #4227072");		// 0x408000
+  	__ASM(" movw	r0, #60680");			// 0xED08
+  	__ASM(" movt	r0, #57344");			// 0xE000
+  	__ASM(" str	r1, [r0, #0]");			// Set the VTOR
 	 
-//  __ASM("mov.w	r3, #0");				// 0x0000
-//  __ASM("movt		r3, #128");			// 0x0080
-  __ASM("ldr	r0, [r1, #0]");			// Stack pointer value
-  __ASM("msr msp, r0");						// Set it
-  __ASM("ldr	r0, [r1, #4]");			// Reset address
-  __ASM("mov.w	r1, #1");
-  __ASM("orr		r0, r1");					// Set lsbit
-  __ASM("bx r0");									// Execute application
+	//  __ASM("mov.w	r3, #0");				// 0x0000
+	//  __ASM("movt		r3, #128");			// 0x0080
+  	__ASM("ldr	r0, [r1, #0]");			// Stack pointer value
+  	__ASM("msr msp, r0");						// Set it
+  	__ASM("ldr	r0, [r1, #4]");			// Reset address
+  	__ASM("mov.w	r1, #1");
+  	__ASM("orr		r0, r1");					// Set lsbit
+  	__ASM("bx r0");									// Execute application
+	}
+	v = 0x407000 ;
+	v = * ( (uint32_t *)v ) ;
+	if ( v == 0x2000c000 )
+	{
+		__ASM(" movw	r1, #28672");		// 0x407000
+		__ASM(" movt	r1, #64");		// 0x407000
+  	__ASM(" movw	r0, #60680");			// 0xED08
+		__ASM(" movt	r0, #57344");			// 0xE000
+  	__ASM(" str	r1, [r0, #0]");			// Set the VTOR
+	 
+		__ASM("ldr	r0, [r1, #0]");			// Stack pointer value
+  	__ASM("msr msp, r0");						// Set it
+		__ASM("ldr	r0, [r1, #4]");			// Reset address
+  	__ASM("mov.w	r1, #1");
+		__ASM("orr		r0, r1");					// Set lsbit
+  	__ASM("bx r0");									// Execute application
+	}
 }
 
 #endif

@@ -17,6 +17,13 @@
 
 #endif
 
+#if defined(PCBX12D) || defined(PCBX10)
+#include "hal.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
+#endif
+
 #include "radio.h"
 #include "drivers.h"
 #include "logicio.h"
@@ -61,6 +68,7 @@ struct t_softSerial
 	uint8_t bitState ;
 	uint8_t bitCount ;
 	uint8_t softSerialEvenParity ;
+	uint8_t RxDisabled ;
 	struct t_fifo128 *pfifo ;
 } ;
 
@@ -244,6 +252,19 @@ void disable_software_com1()
 	disable_software_com( PIO_PA5 ) ;
 }
 
+void disable_com1_Rx()
+{
+	struct t_softSerial *pss = &SoftSerial1 ;
+	pss->RxDisabled = 1 ;
+}
+
+void enable_com1_Rx()
+{
+	struct t_softSerial *pss = &SoftSerial1 ;
+	pss->RxDisabled = 0 ;
+}
+
+
 void init_software_com2(uint32_t baudrate, uint32_t invert, uint32_t parity)
 {
 	init_software_com(baudrate, invert, parity, 1 ) ;
@@ -266,6 +287,11 @@ extern "C" void PIOA_IRQHandler()
 	(void) dummy ;		// Discard value - prevents compiler warning
 
 	dummy = PIOA->PIO_PDSR ;
+	if ( pss->RxDisabled )
+	{
+		return ;
+	}
+
 	if ( ( dummy & pss->softwareComBit ) == pss->softSerInvert )
 	{
 		// L to H transition
@@ -320,7 +346,7 @@ extern "C" void TC5_IRQHandler()
 
 #endif
 
-#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 
 void com1_Configure( uint32_t baudRate, uint32_t invert, uint32_t parity )
 {

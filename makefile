@@ -26,49 +26,73 @@ BIN  = $(CP) -O ihex
 BINX = $(CP) -O binary 
 
 # Object files directory
+ifeq ($(PCB), X10)
+ ifeq ($(T16), 1)
+  ifeq ($(PCBTX16S), 1)
+   OBJDIR = tx16sobj
+  else
+   OBJDIR = t16obj
+  endif
+ else
+   OBJDIR = x10obj
+ endif
+else
 ifeq ($(PCB), X12D)
   OBJDIR = x12obj
 else
-ifeq ($(PCB), TARANIS)
- ifeq ($(REVPLUS), 1)
-  OBJDIR = tpobj
+ ifeq ($(PCB), TARANIS)
+  ifeq ($(REVPLUS), 1)
+   OBJDIR = tpobj
+  else
+   OBJDIR = tobj
+  endif
  else
-  OBJDIR = tobj
+  ifeq ($(PCB), X9D)
+   ifeq ($(REVPLUS), 1)
+    OBJDIR = xpobj
+   else
+    OBJDIR = xobj
+   endif
+  else
+   ifeq ($(PCB), 9XT)
+    OBJDIR = 9xtobj
+   else
+    ifeq ($(PCB), X7)
+     ifeq ($(T12), 1)
+      OBJDIR = t12obj
+     else
+      ifeq ($(PCBACCESS), 1)
+       OBJDIR = x7aobj
+      else
+       OBJDIR = x7obj
+      endif
+     endif
+    else
+     ifeq ($(REVX), 1)
+      OBJDIR = robj
+     else
+      ifeq ($(PCB), X9E)
+       OBJDIR = x9eobj
+      else
+       ifeq ($(PCB), XLITE)
+        OBJDIR = lobj
+       else
+        ifeq ($(PCB), X3)
+         OBJDIR = x3obj
+        else
+         ifeq ($(ARUNI), 1)
+          OBJDIR = uniobj
+         else
+          OBJDIR = obj
+         endif
+        endif
+       endif
+      endif
+     endif
+    endif
+   endif
+  endif
  endif
-else
-ifeq ($(PCB), X9D)
- ifeq ($(REVPLUS), 1)
-  OBJDIR = xpobj
- else
-  OBJDIR = xobj
- endif
-else
-ifeq ($(PCB), 9XT)
- OBJDIR = 9xtobj
-else
-ifeq ($(PCB), X7)
- ifeq ($(T12), 1)
-  OBJDIR = t12obj
- else
-  OBJDIR = x7obj
- endif
-else
- ifeq ($(REVX), 1)
-  OBJDIR = robj
- else
- ifeq ($(PCB), X9E)
-  OBJDIR = x9eobj
- else
- ifeq ($(PCB), XLITE)
-  OBJDIR = lobj
- else
-  OBJDIR = obj
- endif
- endif
- endif
-endif
-endif
-endif
 endif
 endif
 
@@ -107,31 +131,39 @@ PROJECT        = bootloader
 
 ifeq ($(PCB), TARANIS)
 RUN_FROM_FLASH = 0
- else
+else
  ifeq ($(PCB), X9D)
   RUN_FROM_FLASH = 0
  else
- ifeq ($(PCB), 9XT)
-  RUN_FROM_FLASH = 0
- else
- ifeq ($(PCB), X9E)
-  RUN_FROM_FLASH = 0
- else
- ifeq ($(PCB), X7)
-  RUN_FROM_FLASH = 0
- else
- ifeq ($(PCB), X12D)
-  RUN_FROM_FLASH = 0
- else
- ifeq ($(PCB), XLITE)
+  ifeq ($(PCB), 9XT)
    RUN_FROM_FLASH = 0
- else
-   RUN_FROM_FLASH = 1
- endif
- endif
- endif
- endif
- endif
+  else
+   ifeq ($(PCB), X9E)
+    RUN_FROM_FLASH = 0
+   else
+    ifeq ($(PCB), X7)
+     RUN_FROM_FLASH = 0
+    else
+     ifeq ($(PCB), X12D)
+      RUN_FROM_FLASH = 0
+     else
+      ifeq ($(PCB), XLITE)
+       RUN_FROM_FLASH = 0
+      else
+       ifeq ($(PCB), X3)
+        RUN_FROM_FLASH = 0
+       else
+        ifeq ($(PCB), X10)
+         RUN_FROM_FLASH = 0
+        else
+		   RUN_FROM_FLASH = 1
+		  endif
+       endif
+      endif
+     endif
+    endif
+   endif
+  endif
  endif
 endif
 
@@ -170,82 +202,120 @@ else
   EXTRAINCDIRS += include
 #  EXTRAINCDIRS += ../x9d
  else
- ifeq ($(PCB), TARANIS)
-  ARCH = ARM
-  LDSCRIPT = stm32_ramBoot.ld
-  TRGT = arm-none-eabi-
-  CPPDEFS += -DHSE_VALUE=12000000
-  CPPDEFS += -DPCBX9D 
-  CPPDEFS += -DPCBTARANIS 
-  ifeq ($(REVPLUS), 1)
-   FULL_PRJ = $(PROJECT)_ramBootTp
-  else
-   FULL_PRJ = $(PROJECT)_ramBootT
-  endif
-  EXTRAINCDIRS += include
+  ifeq ($(PCB), TARANIS)
+   ARCH = ARM
+   LDSCRIPT = stm32_ramBoot.ld
+   TRGT = arm-none-eabi-
+   CPPDEFS += -DHSE_VALUE=12000000
+   CPPDEFS += -DPCBX9D 
+   CPPDEFS += -DPCBTARANIS 
+   ifeq ($(REVPLUS), 1)
+    FULL_PRJ = $(PROJECT)_ramBootTp
+   else
+    FULL_PRJ = $(PROJECT)_ramBootT
+   endif
+   EXTRAINCDIRS += include
 #  EXTRAINCDIRS += ../targets/taranis/STM32F2xx_StdPeriph_Lib_V1.1.0/Libraries/CMSIS/Device/ST/STM32F2xx/Include
- else
- ifeq ($(PCB), 9XT)
-  ARCH = ARM
-  LDSCRIPT = stm32_ramBoot.ld
-  TRGT = arm-none-eabi-
-  CPPDEFS += -DHSE_VALUE=12000000
-  CPPDEFS += -DPCB9XT 
-  CPPDEFS += -DPCBSP 
-  FULL_PRJ = $(PROJECT)_ramBoot9xt
-  EXTRAINCDIRS += include
- else
-  ifeq ($(PCB), X9E)
-   ARCH = ARM
-   LDSCRIPT = stm32_ramBoot.ld
-   TRGT = arm-none-eabi-
-   CPPDEFS += -DHSE_VALUE=12000000
-   CPPDEFS += -DREV9E 
-   CPPDEFS += -DREVPLUS
-   CPPDEFS += -DPCBX9D
-   FULL_PRJ = $(PROJECT)_ramBootx9e
-   EXTRAINCDIRS += include
- else
-  ifeq ($(PCB), X7)
-   ARCH = ARM
-   LDSCRIPT = stm32_ramBoot.ld
-   TRGT = arm-none-eabi-
-   CPPDEFS += -DHSE_VALUE=12000000
-   CPPDEFS += -DPCBX7 
-   CPPDEFS += -DPCBX9D
-   ifeq ($(T12), 1)
-	 FULL_PRJ = $(PROJECT)_ramBootT12
-    CPPDEFS += -DPCBT12
-	else
-	 FULL_PRJ = $(PROJECT)_ramBootx7
-	endif
-   EXTRAINCDIRS += include
   else
-  ifeq ($(PCB), XLITE)
-   ARCH = ARM
-   LDSCRIPT = stm32_ramBoot.ld
-   TRGT = arm-none-eabi-
-   CPPDEFS += -DHSE_VALUE=12000000
-   CPPDEFS += -DPCBXLITE 
-   CPPDEFS += -DPCBX9D
-   FULL_PRJ = $(PROJECT)_ramBootL
-   EXTRAINCDIRS += include
-  else
-   ifeq ($(PCB), X12D)
+   ifeq ($(PCB), 9XT)
     ARCH = ARM
-    LDSCRIPT = stm32f4_ramBoot.ld
+    LDSCRIPT = stm32_ramBoot.ld
     TRGT = arm-none-eabi-
     CPPDEFS += -DHSE_VALUE=12000000
-    CPPDEFS += -DPCBX12D
-    FULL_PRJ = $(PROJECT)_ramBootx12
+    CPPDEFS += -DPCB9XT 
+    CPPDEFS += -DPCBSP 
+    FULL_PRJ = $(PROJECT)_ramBoot9xt
     EXTRAINCDIRS += include
-    UDEFS = -DSTM32F429_439xx
-   endif
+   else
+    ifeq ($(PCB), X9E)
+     ARCH = ARM
+     LDSCRIPT = stm32_ramBoot.ld
+     TRGT = arm-none-eabi-
+     CPPDEFS += -DHSE_VALUE=12000000
+     CPPDEFS += -DREV9E 
+     CPPDEFS += -DREVPLUS
+     CPPDEFS += -DPCBX9D
+     FULL_PRJ = $(PROJECT)_ramBootx9e
+     EXTRAINCDIRS += include
+    else
+     ifeq ($(PCB), X7)
+      ARCH = ARM
+      LDSCRIPT = stm32_ramBoot.ld
+      TRGT = arm-none-eabi-
+      CPPDEFS += -DHSE_VALUE=12000000
+      CPPDEFS += -DPCBX7 
+      CPPDEFS += -DPCBX9D
+      ifeq ($(T12), 1)
+       FULL_PRJ = $(PROJECT)_ramBootT12
+       CPPDEFS += -DPCBT12
+      else
+       ifeq ($(PCBACCESS), 1)
+        FULL_PRJ = $(PROJECT)_ramBootx7a
+        CPPDEFS += -DPCBX7ACCESS
+       else
+		  FULL_PRJ = $(PROJECT)_ramBootx7
+       endif
+      endif
+      EXTRAINCDIRS += include
+     else
+      ifeq ($(PCB), XLITE)
+       ARCH = ARM
+       LDSCRIPT = stm32_ramBoot.ld
+       TRGT = arm-none-eabi-
+       CPPDEFS += -DHSE_VALUE=12000000
+       CPPDEFS += -DPCBXLITE 
+       CPPDEFS += -DPCBX9D
+       FULL_PRJ = $(PROJECT)_ramBootL
+       EXTRAINCDIRS += include
+      else
+       ifeq ($(PCB), X12D)
+        ARCH = ARM
+        LDSCRIPT = stm32f4_ramBoot.ld
+        TRGT = arm-none-eabi-
+        CPPDEFS += -DHSE_VALUE=12000000
+        CPPDEFS += -DPCBX12D
+        FULL_PRJ = $(PROJECT)_ramBootx12
+        EXTRAINCDIRS += include
+        UDEFS = -DSTM32F429_439xx
+    	else
+        ifeq ($(PCB), X3)
+         ARCH = ARM
+         LDSCRIPT = stm32_ramBoot.ld
+         TRGT = arm-none-eabi-
+         CPPDEFS += -DHSE_VALUE=12000000
+         CPPDEFS += -DPCBX3
+         CPPDEFS += -DPCBX9LITE
+         CPPDEFS += -DPCBX9D
+         FULL_PRJ = $(PROJECT)_ramBootx3
+         EXTRAINCDIRS += include
+        else
+         ifeq ($(PCB), X10)
+          ARCH = ARM
+          LDSCRIPT = stm32f4_ramBoot.ld
+          TRGT = arm-none-eabi-
+          CPPDEFS += -DHSE_VALUE=12000000
+          CPPDEFS += -DPCBX10
+          EXTRAINCDIRS += include
+          UDEFS = -DSTM32F429_439xx
+          ifeq ($(T16), 1)
+           ifeq ($(PCBTX16S), 1)
+			   FULL_PRJ = $(PROJECT)_ramBoottx16s
+           	CPPDEFS += -DPCBTX16S
+           else
+            CPPDEFS += -DPCBT16
+			   FULL_PRJ = $(PROJECT)_ramBootT16
+           endif
+          else
+			  FULL_PRJ = $(PROJECT)_ramBootx10
+          endif
+		   endif
+		  endif
+       endif
+      endif
+     endif
+    endif
    endif
   endif
-  endif
- endif
- endif
  endif
 endif
 ifeq ($(REVPLUS), 1)
@@ -296,7 +366,7 @@ ASRC = startup_stm32f2xx.s
 else
 
 
-ifeq ($(PCB), X9D)
+ ifeq ($(PCB), X9D)
 SRC  = system_stm32f2xx.c \
        stm32f2xx_rcc.c \
        stm32f2xx_gpio.c \
@@ -333,10 +403,10 @@ CPPSRC = lcdboot.cpp \
 # List ASM source files here
 ASRC = x9d/startup_stm32f2xx.s
 
-else
+ else
 
 
-ifeq ($(PCB), X7)
+  ifeq ($(PCB), X7)
 SRC  = system_stm32f2xx.c \
        stm32f2xx_rcc.c \
        stm32f2xx_gpio.c \
@@ -373,9 +443,45 @@ CPPSRC = lcdboot.cpp \
 # List ASM source files here
 ASRC = x9d/startup_stm32f2xx.s
 
-else
+  else
 
-ifeq ($(PCB), XLITE)
+   ifeq ($(PCB), X3)
+SRC  = system_stm32f2xx.c \
+       stm32f2xx_rcc.c \
+       stm32f2xx_gpio.c \
+       stm32f2xx_spi.c \
+       misc.c \
+       usb/usb_core.c \
+       usb/usb_dcd.c \
+       usb/usb_dcd_int.c \
+       usb/usbd_core.c \
+       usb/usbd_ioreq.c \
+       usb/usbd_req.c \
+       usb/usbd_msc_data.c \
+       usb/usbd_msc_scsi.c \
+       usb/usbd_msc_bot.c \
+       usb/usbd_msc_core.c \
+       usb/usbd_desc.c \
+       usb/usb_bsp.c
+
+CPPSRC = lcdboot.cpp \
+         ff.cpp \
+         aspi.cpp \
+         x9ddiskio.cpp \
+         lcd_driver.cpp \
+       	i2c_ee.cpp \
+         driversboot.cpp \
+         logicioboot.cpp \
+			ff_lfn.cpp \
+         usbd_usr.cpp \
+         usbd_storage_msd.cpp \
+			power.cpp \
+         boot.cpp
+
+ASRC = x9d/startup_stm32f2xx.s
+   else
+
+    ifeq ($(PCB), XLITE)
 SRC  = system_stm32f2xx.c \
        stm32f2xx_rcc.c \
        stm32f2xx_gpio.c \
@@ -412,9 +518,9 @@ CPPSRC = lcdboot.cpp \
 # List ASM source files here
 ASRC = x9d/startup_stm32f2xx.s
 
-else
+    else
 
-ifeq ($(PCB), 9XT)
+     ifeq ($(PCB), 9XT)
 SRC  = system_stm32f2xx.c \
        stm32f2xx_rcc.c \
        stm32f2xx_gpio.c \
@@ -451,8 +557,8 @@ CPPSRC = lcdboot.cpp \
 
 # List ASM source files here
 ASRC = x9d/startup_stm32f2xx.s
-else
-ifeq ($(PCB), X9E)
+     else
+      ifeq ($(PCB), X9E)
 SRC  = system_stm32f2xx.c \
        stm32f2xx_rcc.c \
        stm32f2xx_gpio.c \
@@ -489,66 +595,93 @@ CPPSRC = lcdboot.cpp \
 # List ASM source files here
 ASRC = x9d/startup_stm32f2xx.s
 
-else
-ifeq ($(PCB), X12D)
-SRC  = X12D/system_stm32f4xx.c \
-		 X12D/stm32f4xx_ltdc.c \
-		 X12D/stm32f4xx_dma2d.c \
-       X12D/stm32f4xx_rcc.c \
-		 X12D/sdram_driver.c \
-		 X12D/stm32f4xx_fmc.c \
-       X12D/stm32f4xx_gpio.c \
+      else
+       ifeq ($(PCB), X12D)
+SRC  = system_stm32f4xx.c \
+		 stm32f4xx_ltdc.c \
+		 stm32f4xx_dma2d.c \
+		 stm32f4xx_dma.c \
+		 stm32f4xx_sdio.c \
+       stm32f4xx_rcc.c \
+		 sdram_driver.c \
+		 stm32f4xx_fmc.c \
+       stm32f4xx_gpio.c \
        X12D/pwr_driver.c \
-       X12D/misc.c
+       sdio_sd.c \
+       usb/usb_core.c \
+       usb/usb_dcd.c \
+       usb/usb_dcd_int.c \
+       usb/usbd_core.c \
+       usb/usbd_ioreq.c \
+       usb/usbd_req.c \
+       usb/usbd_msc_data.c \
+       usb/usbd_msc_scsi.c \
+       usb/usbd_msc_bot.c \
+       usb/usbd_msc_core.c \
+       usb/usbd_desc.c \
+       usb/usb_bspx12.c \
+       misc.c
 
-#       X12D/pwr_driver.c
-
-#SRC  = X12D/system_stm32f4xx.c \
-#       X12D/stm32f4xx_spi.c \
-#       X12D/misc.c \
-#		 X12D/stm32f4xx_dma.c \
-#		 X12D/stm32f4xx_ltdc.c \
-#       X12D/stm32f4xx_sdio.c \
-#		 X12D/sdio_sd.c \
-#       X12D/usb_core.c \
-#       X12D/usb_dcd.c \
-#       X12D/usb_dcd_int.c \
-#       X12D/usbd_core.c \
-#       X12D/usbd_ioreq.c \
-#       X12D/usbd_req.c \
-#       X12D/usbd_msc_data.c \
-#       X12D/usbd_msc_scsi.c \
-#       X12D/usbd_msc_bot.c \
-#       X12D/usbd_msc_core.c \
-#       X12D/usbd_desc.c \
-#       X12D/usb_bsp.c
 
 CPPSRC = logicioboot.cpp \
          X12D/lcd_driver12.cpp \
 			X12D/lcdboot12.cpp \
          driversboot.cpp \
+         X12D/diskiox12.cpp \
          ff.cpp \
 			ff_lfn.cpp \
+         usbd_usr.cpp \
+         usbd_storage_msd.cpp \
          boot.cpp
-
-#CPPSRC = X12D/lcdboot.cpp \
-#         logicioboot.cpp
-#         X12D/lcd_driver.cpp \
-#         ff.cpp \
-#         x12ddiskio.cpp \
-#         lcd_driver.cpp \
-#         X12D/hdrivers.cpp \
-#			ff_lfn.cpp \
-#         X12D/usbd_usr.cpp \
-#         X12D/led_driver.cpp \
-#         usbd_storage_msd.cpp \
 
 
 # List ASM source files here
 ASRC = X12D/startup_stm32f42_43xxx.s
 
-else
+       else
 
+       ifeq ($(PCB), X10)
+SRC  = system_stm32f4xx.c \
+		 stm32f4xx_ltdc.c \
+		 stm32f4xx_dma2d.c \
+		 stm32f4xx_dma.c \
+		 stm32f4xx_sdio.c \
+       stm32f4xx_rcc.c \
+		 sdram_driver.c \
+		 stm32f4xx_fmc.c \
+       stm32f4xx_gpio.c \
+       X12D/pwr_driver.c \
+       sdio_sd.c \
+       usb/usb_core.c \
+       usb/usb_dcd.c \
+       usb/usb_dcd_int.c \
+       usb/usbd_core.c \
+       usb/usbd_ioreq.c \
+       usb/usbd_req.c \
+       usb/usbd_msc_data.c \
+       usb/usbd_msc_scsi.c \
+       usb/usbd_msc_bot.c \
+       usb/usbd_msc_core.c \
+       usb/usbd_desc.c \
+       usb/usb_bspx12.c \
+       misc.c
+
+
+CPPSRC = logicioboot.cpp \
+         X12D/lcd_driver12.cpp \
+			X12D/lcdboot12.cpp \
+         driversboot.cpp \
+         X12D/diskiox12.cpp \
+         ff.cpp \
+			ff_lfn.cpp \
+         usbd_usr.cpp \
+         usbd_storage_msd.cpp \
+         boot.cpp
+
+
+# List ASM source files here
+ASRC = X12D/startup_stm32f42_43xxx.s
+       else
 # List C source files here
 SRC  = core_cm3.c \
        board_lowlevel.c \
@@ -578,13 +711,15 @@ CPPSRC = lcdboot.cpp \
 # List ASM source files here
 ASRC =
 
-endif
+       endif
+       endif
+      endif
 
-endif
-endif
-endif
-endif
-endif
+     endif
+    endif
+   endif
+  endif
+ endif
 endif
 
 # List all user directories here
@@ -734,6 +869,11 @@ clean:
 	-rm -f 9xtobj/*.*
 	-rm -f x9eobj/*.*
 	-rm -f x7obj/*.*
+	-rm -f lobj/*.*
+	-rm -f t12obj/*.*
+	-rm -f x12obj/*.*
+	-rm -f x10obj/*.*
+	-rm -f T16obj/*.*
 	-rm -f *.elf
 	-rm -f *.map
 	-rm -f *.hex

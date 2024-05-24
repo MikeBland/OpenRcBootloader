@@ -35,7 +35,6 @@
 #define WP_H          do{I2C_EE_WP_GPIO->BSRRL = I2C_EE_WP;}while(0)
 #define WP_L          do{I2C_EE_WP_GPIO->BSRRH = I2C_EE_WP;}while(0)
 
-
 /* Exported functions ------------------------------------------------------- */
 void I2C_EE_Init(void);
 void I2C_EE_ByteWrite(uint8_t* pBuffer, uint16_t WriteAddr);

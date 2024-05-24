@@ -37,7 +37,7 @@
 #include "drivers.h"
 #endif
 
-#ifdef PCBX12D
+#if defined(PCBX12D) || defined(PCBX10)
 #include "radio.h"
 #include "hal.h"
 #include "stm32f4xx.h"
@@ -68,6 +68,115 @@ void b_putEvent( uint8_t evt)
 {
   s_evt = evt;
 }
+
+#ifdef PCBX12D
+
+volatile int32_t Rotary_position ;
+volatile int32_t Rotary_count ;
+int32_t LastRotaryValue ;
+int32_t Rotary_diff ;
+
+void init_rotary_encoder()
+{
+	configure_pins( 0x0C00, PIN_INPUT | PIN_PULLUP | PIN_PORTH ) ;
+	configure_pins( 0x0002, PIN_INPUT | PIN_PULLUP | PIN_PORTC ) ;
+}
+
+void checkRotaryEncoder()
+{
+  register uint32_t dummy ;
+	
+	dummy = GPIOENCODER->IDR ;	// Read Rotary encoder ( PE11, PE9 )
+	dummy >>= 10 ;
+//	dummy = (dummy & 1) | ( ( dummy >> 1 ) & 2 ) ;	// pick out the two bits
+	dummy &= 0x03 ;
+	if ( dummy != ( Rotary_position & 0x03 ) )
+	{
+		if ( ( Rotary_position & 0x01 ) ^ ( ( dummy & 0x02) >> 1 ) )
+		{
+			Rotary_count -= 1 ;
+		}
+		else
+		{
+			Rotary_count += 1 ;
+		}
+		Rotary_position &= ~0x03 ;
+		Rotary_position |= dummy ;
+	}
+}
+
+
+#endif // PCBX12D
+
+
+#ifdef PCBX10
+
+volatile int32_t Rotary_position ;
+volatile int32_t Rotary_count ;
+int32_t LastRotaryValue ;
+int32_t Rotary_diff ;
+
+void init_rotary_encoder()
+{
+  register uint32_t dummy ;
+	RCC->AHB1ENR |=  RCC_AHB1ENR_GPIOHEN | RCC_AHB1ENR_GPIOIEN ;
+	configure_pins( 0x0C00, PIN_INPUT | PIN_PULLUP | PIN_PORTH ) ;
+	configure_pins( KEYS_GPIO_PIN_ENTER, PIN_INPUT | PIN_PULLUP | PIN_PORTI ) ;
+	
+	dummy = GPIOENCODER->IDR ;	// Read Rotary encoder ( PE11, PE9 )
+	dummy >>= 10 ;
+	dummy &= 0x03 ;
+	Rotary_position &= ~0x03 ;
+	Rotary_position |= dummy ;
+}
+
+void checkRotaryEncoder()
+{
+  register uint32_t dummy ;
+	
+	dummy = GPIOENCODER->IDR ;	// Read Rotary encoder ( PE11, PE9 )
+	dummy >>= 10 ;
+//	dummy = (dummy & 1) | ( ( dummy >> 1 ) & 2 ) ;	// pick out the two bits
+	dummy &= 0x03 ;
+	
+// For T16!
+	if ( dummy != ( Rotary_position & 0x03 ) )
+	{
+		if ( ( dummy & 0x01 ) ^ ( ( dummy & 0x02) >> 1 ) )
+		{
+			if ( (Rotary_position & 0x03) == 3 )
+			{
+				Rotary_count += 1 ;
+			}
+			else
+			{
+				Rotary_count -= 1 ;
+			}
+		}
+		else
+		{
+			if ( (Rotary_position & 0x03) == 3 )
+			{
+				Rotary_count -= 1 ;
+			}
+			if ( (Rotary_position & 0x03) == 0 )
+			{
+				Rotary_count += 1 ;
+			}
+		}
+		Rotary_position &= ~0x03 ;
+		Rotary_position |= dummy ;
+	}
+}
+
+
+#endif // PCBX10
+
+
+
+
+
+uint16_t WatchdogTimer ;
 
 #ifdef PCBSKY
 volatile int32_t Rotary_position ;
@@ -116,7 +225,7 @@ void checkRotaryEncoder()
 
 #endif
 
-#if (defined(REV9E) || defined(PCBX7))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBX9LITE))
 
 volatile int32_t Rotary_position ;
 volatile int32_t Rotary_count ;
@@ -155,6 +264,37 @@ void checkRotaryEncoder()
 #endif
 #else // PCBX7
 
+#ifdef PCBX9LITE
+void init_rotary_encoder()
+{
+	configure_pins( 0x1C00, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
+}
+
+void checkRotaryEncoder()
+{
+  register uint32_t dummy ;
+	
+	dummy = GPIOENCODER->IDR ;	// Read Rotary encoder ( PE12, PE10 )
+	dummy >>= 10 ;
+	dummy = (dummy & 1) | ( ( dummy >> 1 ) & 2 ) ;	// pick out the two bits
+	if ( dummy != ( Rotary_position & 0x03 ) )
+	{
+		if ( ( Rotary_position & 0x01 ) ^ ( ( dummy & 0x02) >> 1 ) )
+		{
+			Rotary_count += 1 ;
+		}
+		else
+		{
+			Rotary_count -= 1 ;
+		}
+		Rotary_position &= ~0x03 ;
+		Rotary_position |= dummy ;
+	}
+}
+
+
+#else // X3
+
 void init_rotary_encoder()
 {
 //	configure_pins( 0x0060, PIN_INPUT | PIN_PULLUP | PIN_PORTE ) ;
@@ -186,6 +326,7 @@ void checkRotaryEncoder()
 		Rotary_position |= dummy ;
 	}
 }
+#endif // X3
 #endif // PCBX7
 
 uint8_t LastEvt ;
@@ -198,7 +339,11 @@ uint8_t getEvent()
 	checkRotaryEncoder() ;
 	{
 		int32_t x ;
+#ifndef PCBX9LITE
 		x = Rotary_count >> 1 ;
+#else
+		x = Rotary_count >> 1 ;
+#endif
 		Rotary_diff = x - LastRotaryValue ;
 		LastRotaryValue = x ;
 	}
@@ -246,6 +391,31 @@ extern int32_t Rotary_diff ;
 		else if ( Rotary_diff < 0 )
 		{
 			evt = EVT_KEY_FIRST(KEY_UP) ;
+		}
+		Rotary_diff = 0 ;
+	}
+	if ( evt != 0 )
+	{
+		LastEvt = evt ;
+	}
+#endif
+#if defined(PCBX12D) || defined(PCBX10)
+	{
+		int32_t x ;
+		x = Rotary_count >> 1 ;
+		Rotary_diff = x - LastRotaryValue ;
+		LastRotaryValue = x ;
+	}
+	if ( evt == 0 )
+	{
+extern int32_t Rotary_diff ;
+		if ( Rotary_diff > 0 )
+		{
+			evt = EVT_KEY_FIRST(KEY_MINUS) ;
+		}
+		else if ( Rotary_diff < 0 )
+		{
+			evt = EVT_KEY_FIRST(KEY_PLUS) ;
 		}
 		Rotary_diff = 0 ;
 	}
@@ -365,6 +535,12 @@ void per10ms()
 {
 	register uint32_t i ;
 
+	if ( WatchdogTimer )
+	{
+		wdt_reset() ;
+		WatchdogTimer -= 1 ;
+	}
+
   uint8_t enuk = KEY_MENU;
   uint8_t    in = ~read_keys() & 0x7E ;
 	// Bits 3-6 are down, up, right and left
@@ -434,6 +610,15 @@ extern uint32_t readTrainerSwitch( void ) ;
 	keys[BTN_RE].input( value,(EnumKeys)BTN_RE); // Rotary Enc. Switch
 #endif
 
+#if defined(PCBX12D) || defined(PCBX10)
+	uint8_t value = (~KEYS_GPIO_REG_ENTER & KEYS_GPIO_PIN_ENTER) ? 1 : 0 ;
+	keys[BTN_RE].input( value,(EnumKeys)BTN_RE); // Rotary Enc. Switch
+#endif
+
+#ifdef PCBX9LITE
+	uint8_t value = (~GPIOE->IDR & PIN_BUTTON_ENCODER) ? 1 : 0 ;
+	keys[BTN_RE].input( value,(EnumKeys)BTN_RE); // Rotary Enc. Switch
+#endif // X3
 
 #ifdef APP
 #ifdef PCB9XT
@@ -677,7 +862,13 @@ uint32_t spi_PDC_action( uint8_t *command, uint8_t *tx, uint8_t *rx, uint32_t co
 //			break ;			
 //		}
 //	}
-	
+
+#ifdef APP
+	if ( count == 0 )
+	{
+		Spi_complete = 1 ;	// No need to wait for DMA
+	}
+#endif	 
 // For bootloader, wait for completion	
 	count = 0 ;
 	while( Spi_complete == 0 )
@@ -695,7 +886,7 @@ uint32_t spi_PDC_action( uint8_t *command, uint8_t *tx, uint8_t *rx, uint32_t co
 	SPI1->CR2 &= ~SPI_CR2_TXDMAEN & ~SPI_CR2_RXDMAEN ;
 	GPIOA->BSRRL = GPIO_Pin_SPI_EE_CS ;		// output disable
 	
-	if ( count > 1000000 )
+	if ( count > 100000 )
 	{
 		return 1 ;
 	}
@@ -900,3 +1091,34 @@ extern "C" void DMA1_Stream0_IRQHandler()
 
 #endif // PCB9XT
 
+#if defined(PCBT16)
+
+#define USART_FLAG_ERRORS (USART_FLAG_ORE | USART_FLAG_FE | USART_FLAG_PE)
+
+//extern "C" void INTMODULE_USART_IRQHandler()
+//{
+//  uint32_t status;
+//	status = INTMODULE_USART->SR ;
+//#ifdef WDOG_REPORT
+//	RTC->BKP1R = 0x86 ;
+//#endif
+//	if ( ( status & USART_SR_TXE ) && (INTMODULE_USART->CR1 & USART_CR1_TXEIE ) )
+//	{
+//		if ( PxxTxCount )
+//		{
+//			INTMODULE_USART->DR = *PxxTxPtr++ ;
+//			PxxTxCount -= 1 ;
+//		}
+//		else
+//		{
+//			INTMODULE_USART->CR1 &= ~USART_CR1_TXEIE ;	// Stop Complete interrupt
+//		}
+//	}
+//  if (status & (USART_FLAG_RXNE | USART_FLAG_ERRORS))
+//	{
+//		uint16_t value = INTMODULE_USART->DR ;
+//	//	value |= getTmr2MHz() & 0xFF00 ;
+//		put_fifo128( &Internal_fifo, value ) ;	
+//	}
+//}
+#endif

@@ -47,7 +47,7 @@
 #include "radio.h"
 #include "logicio.h"
 
-#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE))
 #define POWER_STATE_OFF				0
 #define POWER_STATE_START			1
 #define POWER_STATE_RUNNING		2
@@ -104,12 +104,12 @@ void soft_power_off()
 
 uint32_t check_soft_power()
 {
-#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE))
 	uint32_t switchValue ;
 #endif
   
-#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
-#if defined(PCBXLITE)
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE))
+#if defined(PCBXLITE) || defined(PCBX9LITE)
 	switchValue = GPIO_ReadInputDataBit(GPIOPWRSENSE, PIN_PWR_STATUS) == Bit_RESET ;
 #else
 	switchValue = GPIO_ReadInputDataBit(GPIOPWR, PIN_PWR_STATUS) == Bit_RESET ;
@@ -198,6 +198,23 @@ void init_soft_power()
 	configure_pins( PIN_PWR_STATUS, PIN_INPUT | PIN_PORTA ) ;
 
 #else	
+#ifdef PCBX9LITE
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
+	
+	GPIO_ResetBits(GPIOPWRINT, PIN_INT_RF_PWR );
+	GPIO_ResetBits(GPIOPWREXT, PIN_EXT_RF_PWR);
+	GPIO_ResetBits(GPIOPWRSPORT, PIN_SPORT_PWR);
+
+	configure_pins( PIN_INT_RF_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTA ) ;
+	configure_pins( PIN_EXT_RF_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTA ) ;
+	configure_pins( PIN_MCU_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTA ) ;
+	configure_pins( PIN_SPORT_PWR, PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 | PIN_PORTE ) ;
+
+	configure_pins( PIN_PWR_STATUS, PIN_INPUT | PIN_PORTA ) ;
+
+#else // X3
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
 #ifdef REVPLUS
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN ; 		// Enable portD clock
@@ -228,9 +245,10 @@ void init_soft_power()
   // Soft power ON
 
 #endif
+#endif // X3
 	
 	GPIO_SetBits(GPIOPWR,PIN_MCU_PWR);
-#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE))
+#if (defined(REV9E) || defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE))
 	PowerState = POWER_STATE_START ;
 #endif
 

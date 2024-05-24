@@ -124,7 +124,6 @@ uint8_t USBD_MSC_CfgDesc[USB_MSC_CONFIG_DESC_SIZ];
   * @{
   */ 
 
-
 USBD_Class_cb_TypeDef  USBD_MSC_cb = 
 {
   USBD_MSC_Init,

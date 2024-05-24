@@ -65,7 +65,6 @@
   * @}
   */ 
 
-
 /** @defgroup MSC_BOT_Private_Variables
   * @{
   */ 

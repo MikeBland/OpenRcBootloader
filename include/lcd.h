@@ -22,7 +22,7 @@
 #define lcd_h
 
 #ifdef PCBX9D
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 #define DISPLAY_W 128
 #define DISPLAY_H  64
 #else
@@ -59,7 +59,7 @@
 /* time & telemetry flags */
 #define NO_UNIT       0x80
 
-#ifdef PCBX12D
+#if defined(PCBX12D) || defined(PCBX10)
 #define DISPLAY_W	480
 #define DISPLAY_H	272
 
@@ -71,6 +71,7 @@
 #define LCD_GREY		0x8410
 #define LCD_STATUS_GREY	0x3BEF
 
+#define STATUS_VERTICAL		250
 
 
 #endif
@@ -99,11 +100,13 @@ extern const uint8_t *ExtraBigFont ;
 
 extern uint8_t plotType ;
 
-#ifdef PCBX12D
+#if defined(PCBX12D) || defined(PCBX10)
 extern uint16_t lcd_putcAtt( uint16_t x, uint16_t y, const char c, uint8_t mode ) ;
 extern void lcd_hlineStip( uint16_t x, uint16_t y, uint8_t w, uint8_t pat ) ;
 extern void lcd_char_inverse( uint16_t x, uint16_t y, uint16_t w, uint8_t blink ) ;
 extern void lcd_vline( uint16_t x, uint16_t y, int8_t h ) ;
+extern uint16_t lcd_putcAttColour(uint16_t x,uint16_t y,const char c,uint8_t mode, uint16_t colour, uint16_t background ) ;
+extern void lcd_putsnAttColour( uint16_t x, uint16_t y, const char * s,uint8_t len,uint8_t mode, uint16_t colour, uint16_t background ) ;
 #else
 extern uint8_t lcd_putcAtt( uint8_t x, uint8_t y, const char c, uint8_t mode ) ;
 extern void lcd_hlineStip( unsigned char x, unsigned char y, signed char w, uint8_t pat ) ;

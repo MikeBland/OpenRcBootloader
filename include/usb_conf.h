@@ -29,7 +29,11 @@
 #ifndef __USB_CONF__H__
 #define __USB_CONF__H__
 
+#if defined(PCBX12D) || defined(PCBX10)
+#include "stm32f4xx.h"
+#else
 #include "stm32f2xx.h"
+#endif
 
 #define HID_IN_EP                    0x81
 #define HID_OUT_EP                   0x01

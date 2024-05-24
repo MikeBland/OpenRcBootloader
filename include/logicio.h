@@ -13,7 +13,7 @@
 *
 ****************************************************************************/
 
-#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 #define PIN_MODE_MASK		0x0003
 #define PIN_INPUT				0x0000
 #define PIN_OUTPUT			0x0001
@@ -43,7 +43,7 @@
 #define PIN_PER_13			0x00D0
 #define PIN_PER_14			0x00E0
 #define PIN_PER_15			0x00F0
-#define PIN_PORT_MASK		0x0700
+#define PIN_PORT_MASK		0x0F00
 #define PIN_PORTA				0x0000
 #define PIN_PORTB				0x0100
 #define PIN_PORTC				0x0200

@@ -24,7 +24,7 @@
 #define	WriteData(x)	 AspiData(x)
 #define	WriteCommand(x)	 AspiCmd(x)
 
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 
 #define LCD_CONTRAST_OFFSET            20
 #define RESET_WAIT_DELAY_MS            300 // Wait time after LCD reset before first command
@@ -235,6 +235,19 @@ static void backlightInit()
   TIM1->CR1 = TIM_CR1_CEN; // Counter enable
 
 #else	
+ #ifdef PCBX9LITE
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ;
+  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN ;    // Enable clock
+	configure_pins( BACKLIGHT_GPIO_PIN, PIN_PERIPHERAL | PIN_PER_1 | PIN_PORTA | PIN_PUSHPULL | PIN_OS2 | PIN_NO_PULLUP ) ;
+  TIM1->ARR = 100;
+  TIM1->PSC = (Peri1_frequency*Timer_mult1) / 10000 - 1 ;
+  TIM1->CCMR2 = TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2; // PWM
+  TIM1->CCER = TIM_CCER_CC3E;
+  TIM1->CCR1 = 100;
+	TIM1->BDTR |= TIM_BDTR_MOE ;
+  TIM1->EGR = 0;
+  TIM1->CR1 = TIM_CR1_CEN; // Counter enable
+ #else // X3
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ;
   RCC->APB1ENR |= RCC_APB1ENR_TIM4EN ;    // Enable clock
   GPIO_InitTypeDef GPIO_InitStructure;
@@ -252,6 +265,7 @@ static void backlightInit()
   TIM4->CCR2 = 100;
   TIM4->EGR = 0;
   TIM4->CR1 = TIM_CR1_CEN; // Counter enable
+ #endif // X3
 #endif
 }
 
@@ -345,6 +359,25 @@ void backlight_set( uint16_t brightness )
 	TIM1->CCR1 = 100 - BacklightBrightness ;
 }
 #else // PCBXLITE
+ #ifdef PCBX9LITE
+void backlight_on()
+{
+	TIM1->CCR3 = 100 - BacklightBrightness ;
+}
+
+void backlight_off()
+{
+	TIM1->CCR3 = 0 ;
+}
+
+void backlight_set( uint16_t brightness )
+{
+	BacklightBrightness = brightness ;
+	TIM1->CCR3 = 100 - BacklightBrightness ;
+}
+
+ #else // X3
+
 void backlight_on()
 {
 	TIM4->CCR2 = 100 - BacklightBrightness ;
@@ -360,6 +393,7 @@ void backlight_set( uint16_t brightness )
 	BacklightBrightness = brightness ;
 	TIM4->CCR2 = 100 - BacklightBrightness ;
 }
+ #endif // PCBX9LITE
 #endif // PCBXLITE
 
 

@@ -29,6 +29,21 @@
   */
 static void I2C_GPIO_Configuration(void)
 {
+#if defined(PCBXLITE) || defined(PCBX9LITE)
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ; 		// Enable portB clock
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN ; 		// Enable portD clock
+  
+	I2C_EE_WP_GPIO->BSRRH = I2C_EE_WP ;				//PD7
+	configure_pins( I2C_EE_WP, PIN_OUTPUT | PIN_OS50 | PIN_PORTD | PIN_PUSHPULL | PIN_NO_PULL ) ;
+	configure_pins( I2C_EE_SCL | I2C_EE_SDA, PIN_OUTPUT | PIN_OS50 | PIN_PORTB | PIN_ODRAIN | PIN_PULLUP ) ;
+	
+#else
+ #if defined(PCBX7ACCESS)
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ; 		// Enable portB clock
+	configure_pins( I2C_EE_SCL | I2C_EE_SDA, PIN_OUTPUT | PIN_OS50 | PIN_PORTB | PIN_ODRAIN | PIN_PULLUP ) ;
+  GPIOB->BSRRH =I2C_EE_WP;	//PB5
+	configure_pins( I2C_EE_WP, PIN_OUTPUT | PIN_OS50 | PIN_PORTB | PIN_PUSHPULL | PIN_NO_PULL ) ;
+ #else
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ; 		// Enable portB clock
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOEEN ; 		// Enable portE clock
 	
@@ -52,7 +67,8 @@ static void I2C_GPIO_Configuration(void)
 //  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
 //  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 //  GPIO_Init(I2C_EE_GPIO, &GPIO_InitStructure);
-  
+ #endif  
+#endif  
   //Set Idle levels
   SDA_H;
   SCL_H;

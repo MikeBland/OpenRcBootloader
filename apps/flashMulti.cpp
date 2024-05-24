@@ -94,10 +94,11 @@
 
 #endif
 
-#ifdef PCBX12D
+#if defined(PCBX12D) || defined(PCBX10)
 #include "stm32f4xx.h"
 #include "stm32f4xx_flash.h"
 #include "timers.h"
+#include "hal.h"
 
 #endif
 
@@ -136,13 +137,23 @@ const uint8_t Version[] =
    #ifdef PCBXLITE
 	'A', 'P', 'P', 'X', 'L', 'T'
    #else
-	'A', 'P', 'P', 'X', '9', 'D'
+    #ifdef PCBX9LITE
+		 'A', 'P', 'P', 'X', '3', ' '
+    #else
+		 'A', 'P', 'P', 'X', '9', 'D'
+    #endif
    #endif
   #endif
  #endif
 #endif
 #ifdef PCB9XT
 	'A', 'P', 'P', '9', 'X', 'T'
+#endif
+#ifdef PCBX12D
+	'A', 'P', 'P', 'X', '1', '2'
+#endif
+#ifdef PCBT16
+	'A', 'P', 'P', 'T', '1', '6'
 #endif
 } ;
 
@@ -155,7 +166,15 @@ extern void checkRotaryEncoder() ;
 #endif
 #endif
 
-#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
+#if defined(PCBX12D) || defined(PCBX10)
+extern void init_rotary_encoder() ;
+extern void checkRotaryEncoder() ;
+extern void lcd_clearBackground( void ) ;
+extern void waitLcdClearDdone( void ) ;
+extern uint32_t isProdVersion( void ) ;
+#endif
+
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 extern void com1_Configure( uint32_t baudRate, uint32_t invert, uint32_t parity ) ;
 extern void disable_software_com1() ;
 #endif
@@ -187,9 +206,71 @@ uint8_t RadioType ;
 uint16_t I2Cack ;
 #endif
 
+#if defined(PCBX12D) || defined(PCBX10)
+#define POWER_STATE_OFF				0
+#define POWER_STATE_START			1
+#define POWER_STATE_RUNNING		2
+#define POWER_STATE_STOPPING	3
+#define POWER_STATE_STOPPED		4
+
+uint8_t PowerState = POWER_STATE_OFF ;
+
+uint32_t check_soft_power()
+{
+	uint32_t switchValue ;
+	
+	switchValue = GPIOPWR->IDR & PIN_PWR_STATUS ;
+	switch ( PowerState )
+	{
+		case POWER_STATE_OFF :
+		default :
+			PowerState = POWER_STATE_START ;
+   		return POWER_ON ;
+		break ;
+			
+		case POWER_STATE_START :
+			if ( !switchValue )
+			{
+				PowerState = POWER_STATE_RUNNING ;
+			}
+   		return POWER_ON ;
+		break ;
+
+		case POWER_STATE_RUNNING :
+			if ( switchValue )
+			{
+				PowerState = POWER_STATE_STOPPING ;
+   			return POWER_X9E_STOP ;
+			}
+   		return POWER_ON ;
+		break ;
+
+		case POWER_STATE_STOPPING :
+			if ( !switchValue )
+			{
+				PowerState = POWER_STATE_STOPPED ;
+ 				return POWER_OFF ;
+			}
+ 			return POWER_X9E_STOP ;
+		break ;
+
+		case POWER_STATE_STOPPED :
+ 			return POWER_OFF ;
+		break ;
+	}
+}
+
+extern "C" void pwrOff(void) ;
+void soft_power_off()
+{
+	pwrOff() ;
+}
+
+#endif
 
 extern struct t_fifo128 Com1_fifo ;
 extern struct t_fifo128 Com2_fifo ;
+extern struct t_fifo128 Internal_fifo ;
 
 void menuUpMulti(uint8_t event) ;
 uint32_t multiUpdate() ;
@@ -349,17 +430,22 @@ uint8_t XmegaSignature[4] ;
 #define CLEAR_TX_BIT_INT() GPIOA->BSRRH = 0x0400
 #define SET_TX_BIT_INT() GPIOA->BSRRL = 0x0400
 #else
-#ifdef PCBXLITE
+#if defined(PCBXLITE) || defined(PCBX9LITE)
 #define CLEAR_TX_BIT() GPIOC->BSRRL = 0x0040
 #define SET_TX_BIT() GPIOC->BSRRH = 0x0040
 #else
+#ifndef PCBX12D
+ #ifndef PCBX10
 #define CLEAR_TX_BIT() GPIOA->BSRRL = 0x0080
 #define SET_TX_BIT() GPIOA->BSRRH = 0x0080
+ #endif
+#endif
 #endif
 #endif
 #endif
 
-#if defined(PCBX9D) || defined(PCB9XT)
+
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 #if !defined(PCBTARANIS)
 #define INTERNAL_RF_ON()      GPIO_SetBits(GPIOPWRINT, PIN_INT_RF_PWR)
 #define INTERNAL_RF_OFF()     GPIO_ResetBits(GPIOPWRINT, PIN_INT_RF_PWR)
@@ -368,6 +454,7 @@ uint8_t XmegaSignature[4] ;
 #endif
 #endif
 
+extern void b_putEvent( register uint8_t evt) ;
 
 /*----------------------------------------------------------------------------
  *         Global functions
@@ -378,7 +465,7 @@ uint16_t getTmr2MHz()
 #ifdef PCBSKY
 	return TC1->TC_CHANNEL[0].TC_CV ;
 #endif
-#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 	return TIM7->CNT ;
 #endif
 }
@@ -546,6 +633,39 @@ void initMultiMode()
 	EXTERNAL_RF_ON() ;
 	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
 #endif
+#if defined(PCBX12D)
+	com1_Configure( 57600, MultiInvert ? SERIAL_NORM : SERIAL_INVERT, SERIAL_NO_PARITY ) ; // Kick off at 57600 baud
+	EXTERNAL_RF_ON() ;
+	if ( isProdVersion() )
+	{
+		configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
+	}
+	else
+	{
+		configure_pins( PROT_PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
+	}
+#endif
+#if defined(PCBX10)
+ #if defined(PCBT16)
+	if ( MultiModule )
+	{
+		INTERNAL_RF_ON() ;
+		RCC->APB2ENR |= RCC_APB2ENR_USART1EN ;		// Enable clock
+	  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN ;     // Enable portB clock
+		configure_pins( PIN_INTPPM_OUT, PIN_PERIPHERAL | PIN_PUSHPULL | PIN_OS25 | PIN_PORTB | PIN_PER_7 ) ;
+		configure_pins( INTMODULE_RX_GPIO_PIN, PIN_PERIPHERAL | PIN_PORTB | PIN_PER_7 ) ;
+	
+		INTMODULE_USART->BRR = PeripheralSpeeds.Peri2_frequency / 57600 ;
+		INTMODULE_USART->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE | USART_CR1_RXNEIE ;
+		NVIC_SetPriority( INTMODULE_USART_IRQn, 3 ) ; // Quite high priority interrupt
+  	NVIC_EnableIRQ( INTMODULE_USART_IRQn);
+		return ;
+	}
+ #endif
+	com1_Configure( 57600, MultiInvert ? SERIAL_NORM : SERIAL_INVERT, SERIAL_NO_PARITY ) ; // Kick off at 57600 baud
+	EXTERNAL_RF_ON() ;
+	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
+#endif
 }
 
 void stopMultiMode()
@@ -583,7 +703,7 @@ void stopMultiMode()
 	if ( MultiModule )
 	{
 		INTERNAL_RF_OFF() ;
-		configure_pins( PIN_INTPPM_OUT, PIN_OUTPUT | PIN_PORTA | PIN_HIGH ) ;
+		configure_pins( PIN_INTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_HIGH ) ;
 	}
 	else
 	{
@@ -597,10 +717,31 @@ void stopMultiMode()
 	EXTERNAL_RF_OFF() ;
 	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
 #endif
+#if defined(PCBX12D) || defined(PCBX10)
+ #if defined(PCBT16)
+	if ( MultiModule )
+	{
+		INTERNAL_RF_OFF() ;
+  	NVIC_DisableIRQ( INTMODULE_USART_IRQn) ;
+		INTMODULE_USART->CR1 &= ~(USART_CR1_UE | USART_CR1_TE | USART_CR1_RE | USART_CR1_RXNEIE) ;
+		return ;
+	}
+ #endif
+	disable_software_com1() ;
+//	com1_Configure( 57600, SERIAL_NORM, SERIAL_NO_PARITY ) ; // Kick off at 57600 baud
+	EXTERNAL_RF_OFF() ;
+	configure_pins( PIN_EXTPPM_OUT, PIN_OUTPUT | PORT_EXTPPM | PIN_LOW ) ;
+#endif
 }
 
 uint16_t getMultiFifo()
 {
+ #if defined(PCBT16)
+	if ( MultiModule )
+	{
+		return get_fifo128( &Internal_fifo ) ;
+	}
+ #endif	
 	if ( MultiPort )
 	{
 		return get_fifo128( &Com2_fifo ) ;
@@ -647,6 +788,32 @@ void sendMultiByte( uint8_t byte )
 	}
 #define CLEAR_TX_BIT() GPIOA->BSRRH = bit
 #define SET_TX_BIT() GPIOA->BSRRL = bit
+#endif
+
+#if defined(PCBX12D)
+	uint32_t bit ;
+
+	bit = isProdVersion() ? PIN_EXTPPM_OUT : PROT_PIN_EXTPPM_OUT ;
+
+#define CLEAR_TX_BIT() GPIOA->BSRRL = bit
+#define SET_TX_BIT() GPIOA->BSRRH = bit
+#endif
+#if defined(PCBX10)
+ #if defined(PCBT16)
+	if ( MultiModule )
+	{
+		/* Wait for the transmitter to be ready */
+  	while ( (INTMODULE_USART->SR & USART_SR_TXE) == 0 ) ;
+
+	  /* Send character */
+		INTMODULE_USART->DR = byte ;
+		return ;
+	}
+ #endif
+	uint32_t bit ;
+	bit = PIN_EXTPPM_OUT ;
+#define CLEAR_TX_BIT() GPIOA->BSRRL = bit
+#define SET_TX_BIT() GPIOA->BSRRH = bit
 #endif
 
 	__disable_irq() ;
@@ -818,7 +985,7 @@ extern "C" void TC2_IRQHandler()
 }
 #endif
 
-#if ( defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) )
+#if ( defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10) )
 void init10msTimer()
 {
 	// Timer14
@@ -938,6 +1105,18 @@ static void initWatchdog()
 	IWDG->PR = 3 ;				// Divide by 32 => 1kHz clock
 	IWDG->KR = 0x5555 ;		// Unlock registers
 	IWDG->RLR = 1000 ;			// 1.0 seconds nominal
+	IWDG->KR = 0xAAAA ;		// reload
+	IWDG->KR = 0xCCCC ;		// start
+}
+#endif
+
+#if defined(PCBX12D) || defined(PCBX10)
+void initLongWatchdog()
+{
+	IWDG->KR = 0x5555 ;		// Unlock registers
+	IWDG->PR = 4 ;				// Divide by 64 => 500Hz clock
+	IWDG->KR = 0x5555 ;		// Unlock registers
+	IWDG->RLR = 2000 ;		// 4.0 seconds nominal
 	IWDG->KR = 0xAAAA ;		// reload
 	IWDG->KR = 0xCCCC ;		// start
 }
@@ -1175,7 +1354,8 @@ uint32_t fileList(uint8_t event, struct fileControl *fc )
 		killEvents(event);
 		result = 1 ;
 	}
-	if ( ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
+//	if ( ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
+	if ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) )
 	{
 		// Select file to flash
 		result = 2 ;
@@ -1192,7 +1372,6 @@ uint32_t fileList(uint8_t event, struct fileControl *fc )
 #endif
 	return result ;
 }
-
 
 void menuUp1(uint8_t event)
 {
@@ -1276,7 +1455,7 @@ void menuUp1(uint8_t event)
     break ;
     
 		case EVT_KEY_FIRST(BOOT_KEY_EXIT):
-		case EVT_KEY_LONG(BTN_RE) :
+//		case EVT_KEY_LONG(BTN_RE) :
 			if ( state < UPDATE_ACTION )
 			{
       	chainMenu(menuUpMulti) ;
@@ -1314,7 +1493,7 @@ void menuUp1(uint8_t event)
 					state = UPDATE_SELECTED ;
     		break ;
 
-				case EVT_KEY_LONG(BTN_RE):
+//				case EVT_KEY_LONG(BTN_RE):
     		case EVT_KEY_LONG(BOOT_KEY_EXIT):
 					state = UPDATE_FILE_LIST ;		// Cancelled
     		break;
@@ -1343,6 +1522,22 @@ void menuUp1(uint8_t event)
 			{
 				lcd_puts_Pleft( 4*FH, "Power on Delay" ) ;
 			}
+//#ifdef PCBX12D
+//			lcd_outhex4( 140, 0, Ccount ) ;
+//			lcd_outhex4( 170, 0, Debug[0] ) ;
+//			lcd_outhex4( 140, 8, Debug[1] >> 16 ) ;
+//			lcd_outhex4( 170, 8, Debug[1] ) ;
+//			lcd_outhex4( 140, 16, Debug[2] >> 16 ) ;
+//			lcd_outhex4( 170, 16, Debug[2] ) ;
+//			lcd_outhex4( 140, 24, Debug[3] >> 16 ) ;
+//			lcd_outhex4( 170, 24, Debug[3] ) ;
+//			lcd_outhex4( 140, 32, Debug[4] >> 16 ) ;
+//			lcd_outhex4( 170, 32, Debug[4] ) ;
+//			lcd_outhex4( 140, 40, Debug[5] >> 16 ) ;
+//			lcd_outhex4( 170, 40, Debug[5] ) ;
+
+//#endif
+
 			width = multiUpdate() ;
 			if ( width > FirmwareSize )
 			{
@@ -1361,6 +1556,7 @@ void menuUp1(uint8_t event)
 			{
 				lcd_vline( i, 5*FH, 8 ) ;
 			}
+			wdt_reset() ;
     break ;
 		
 		case UPDATE_COMPLETE :
@@ -1372,7 +1568,8 @@ void menuUp1(uint8_t event)
 			lcd_outhex4( 0, 7*FH, (XmegaSignature[0] << 8) | XmegaSignature[1] ) ;
 			lcd_outhex4( 25, 7*FH, (XmegaSignature[2] << 8) | XmegaSignature[3] ) ;
 
-			if ( ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
+//			if ( ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
+			if ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) )
 			{
 #if defined(PCBX9D) || defined(PCB9XT)
 				EXTERNAL_RF_OFF();
@@ -1389,7 +1586,7 @@ void displayDate( uint8_t y )
 {
 	uint8_t x ;
 #ifdef PCBX9D
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	x = FW*12+4 ;
  #else
 	x = FW*20+4 ;
@@ -1403,7 +1600,6 @@ void displayDate( uint8_t y )
 	lcd_putsn_P( x+15, y, &DATE_STR[3], 3 ) ;
 	lcd_putsn_P( x+36, y, &DATE_STR[7], 2 ) ;
 }
-
 
 void menuUpMulti(uint8_t event)
 {
@@ -1456,6 +1652,10 @@ void menuUpMulti(uint8_t event)
 	lcd_puts_Pleft( y, "Invert Com Port" ) ;
 	MultiInvert = checkIndexed( y, "\150\001\003 NOYES", MultiInvert, (sub==subN), event ) ;
 #endif
+ #if defined(PCBT16)
+	lcd_puts_Pleft( y, XPSTR("Module") ) ;
+	MultiModule = checkIndexed( y, XPSTR("\110\001\010ExternalInternal"), MultiModule, (sub==subN) ) ;
+ #endif
 }
 
 //uint32_t menu()
@@ -1496,10 +1696,39 @@ void menuUpMulti(uint8_t event)
 //	return MENU_NOTHING ;
 //}
 
+#if defined(PCBX12D)
+
+void ledInit()
+{
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOIEN ;
+	configure_pins( GPIO_Pin_5, PIN_PORTI | PIN_OUTPUT | PIN_PUSHPULL | PIN_OS25 ) ;
+}
+
+void ledRed()
+{
+  GPIO_SetBits( GPIOI, GPIO_Pin_5 ) ;
+}
+
+void ledBlue()
+{
+  GPIO_ResetBits( GPIOI, GPIO_Pin_5 ) ;
+}
+
+#endif // PCBX12D
+
 
 int main()
 {
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX12D)
+	ledInit() ;
+	ledBlue() ;
+	initLongWatchdog() ;
+#endif // PCBX12D
+#if defined(PCBX10)
+	initLongWatchdog() ;
+#endif // PCBX10
+	
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	uint32_t i ;
 #endif
 #ifdef PCB9XT
@@ -1529,12 +1758,18 @@ int main()
 //#endif			
 //	uint32_t firmwareWritten = 0 ;
 
-#if ( defined(PCBX9D) || defined(PCB9XT) )
+#if ( defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10) )
 	wdt_reset() ;
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN ; 		// Enable portA clock
 #endif
 
 	init_soft_power() ;
+
+#if defined(PCBX12D) || defined(PCBX10)
+	// PCB rev pin
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOIEN ;
+	configure_pins( GPIO_Pin_11, PIN_PORTI | PIN_INPUT | PIN_PULLUP ) ;
+#endif // PCBX12D
 
 #ifdef PCB9XT
 	initM64() ;
@@ -1563,12 +1798,17 @@ int main()
 	start_timer0() ;
 #endif
 
-#if defined(PCBX7) || defined(PCBXLITE)
+#if (defined(PCBX7) || defined(PCBXLITE) || defined(PCBX12D) || defined(PCBX9LITE) || defined(PCBX10) )
 	init_hw_timer()	;
 	__enable_irq() ;
 #endif // PCBX7
 
 	lcd_init() ;
+
+
+//#if defined(PCBX10)
+//	configure_pins( GPIO_Pin_15, PIN_PORTI | PIN_INPUT | PIN_PULLUP ) ;
+//#endif
 
 #ifdef PCBSKY
 extern uint8_t OptrexDisplay ;
@@ -1576,11 +1816,14 @@ extern uint8_t OptrexDisplay ;
 #endif
 	lcd_clear() ;
 #ifdef PCBX9D
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	lcd_puts_Pleft( 0, "Update Multi" ) ;
  #else
 	lcd_puts_Pleft( 0, "\006Update Multi" ) ;
  #endif
+#endif
+#if defined(PCBX12D) || defined(PCBX10)
+	lcd_puts_Pleft( 0, "Update Multi" ) ;
 #endif
 	refreshDisplay() ;
 #ifdef PCBSKY
@@ -1594,7 +1837,9 @@ extern uint8_t OptrexDisplay ;
 //	I2C_EE_Init() ;
  #ifndef PCBX7
   #ifndef PCBXLITE
+   #ifndef PCBX9LITE
 	init_hw_timer()	;
+   #endif // PCBX9LITE
   #endif // PCBXLITE
  #endif // PCBX7
 #endif
@@ -1607,7 +1852,9 @@ extern uint8_t OptrexDisplay ;
 
  #ifndef PCBX7
   #ifndef PCBXLITE
+   #ifndef PCBX9LITE
 	__enable_irq() ;
+   #endif // PCBX9LITE
   #endif // PCBXLITE
  #endif // PCBX7
 
@@ -1639,6 +1886,10 @@ extern uint8_t OptrexDisplay ;
 //	} while ( i ) ;
 //	BlSetColour( 50, 3 ) ;
 //#endif
+
+#if defined(PCBX12D) || defined(PCBX10)
+	configure_pins( SD_PRESENT_GPIO_PIN, PIN_PORTC | PIN_INPUT | PIN_PULLUP ) ;
+#endif
 	
 	disk_initialize( 0 ) ;
 	sdInit() ;
@@ -1675,7 +1926,7 @@ extern uint8_t OptrexDisplay ;
 	initWatchdog() ;
 #endif
 
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	i = 40 ;
 	do
 	{
@@ -1701,6 +1952,9 @@ extern uint8_t OptrexDisplay ;
 	init_rotary_encoder() ;
 //	PIOB->PUER = 0x40 ;
 #endif
+#if defined(PCBX12D) || defined(PCBX10)
+	init_rotary_encoder() ;
+#endif
 	
 
 //#ifdef PCBSKY
@@ -1724,13 +1978,16 @@ extern uint8_t OptrexDisplay ;
 	}
 #endif
 
-	uint8_t event = getEvent() ;
-	killEvents(event) ;
+	killEvents( getEvent() ) ;
+	b_putEvent( 0 ) ;
 
 #ifdef PCB9XT
 	BlSetColour( 70, 3 ) ;	
 #endif
 
+#if defined(PCBX12D) || defined(PCBX10)
+	lcd_clearBackground() ;	// Start clearing other frame
+#endif
 	for(;;)
 	{
 		wdt_reset() ;
@@ -1760,16 +2017,21 @@ extern uint8_t M64EncoderPosition ;
 
 		if ( Tenms )
 		{
+#if defined(PCBX10)
+		checkRotaryEncoder() ;
+#endif
+			uint8_t event ;
 	    wdt_reset() ;  // Retrigger hardware watchdog
 
 			Tenms = 0 ;
 		  event = getEvent() ;
 
-	    lcd_clear() ;
-#ifdef PCBX12D
-			waitLcdClearDdone() ;
-#endif
-#ifdef PCBX12D
+//#if defined(PCBX12D) || defined(PCBX10)
+//			waitLcdClearDdone() ;
+//#else	    
+			lcd_clear() ;
+//#endif
+#if defined(PCBX12D) || defined(PCBX10)
 			{
 				int32_t x ;
 				x = Rotary_count >> 1 ;
@@ -1833,8 +2095,14 @@ extern uint8_t M64EncoderPosition ;
 			{
 				displayTimer = 0 ;
     		refreshDisplay() ;
-#if defined(PCBX12D)
-				lcd_clearBackground() ;	// Start clearing other frame
+#if defined(PCBX12D) || defined(PCBX10)
+//#if defined(PCBX10)
+//				if ( ( GPIOI->IDR & 0x8000 ) )
+//				{
+//					lcd_init() ;
+//				}
+//#endif
+//				lcd_clearBackground() ;	// Start clearing other frame
 #endif
 			}
 
@@ -1862,7 +2130,8 @@ extern uint8_t M64EncoderPosition ;
 			if ( ( g_menuStack[0] == menuUpMulti ) && ( g_menuStackPtr == 0 ) )
 			{
 	//			uint8_t event = getEvent() ;
-				if ( ( event == EVT_KEY_LONG(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
+//				if ( ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) ) || ( event == EVT_KEY_LONG(BTN_RE) ) )
+				if ( event == EVT_KEY_FIRST(BOOT_KEY_EXIT) )
 				{
 					state = ST_REBOOT ;
 				}
@@ -1889,6 +2158,16 @@ extern void lcdOff() ;
 	 		wdt_reset() ;
 			if ( (~read_keys() & 0x7E) == 0 )
 			{
+#if defined(PCBX12D) || defined(PCBX10)
+#define SOFTRESET_REQUEST 0xCAFEDEAD
+		    RCC->APB1ENR |= RCC_APB1Periph_PWR ;
+#define RCC_OFFSET                (RCC_BASE - PERIPH_BASE)
+#define BDCR_OFFSET               (RCC_OFFSET + 0x70)
+#define RTCEN_BitNumber           0x0F
+#define BDCR_RTCEN_BB             (PERIPH_BB_BASE + (BDCR_OFFSET * 32) + (RTCEN_BitNumber * 4))
+  			*(__IO uint32_t *) BDCR_RTCEN_BB = ENABLE ;
+  	    RTC->BKP0R = SOFTRESET_REQUEST ;
+#endif
 		  	NVIC_SystemReset() ;
 			}
 		}

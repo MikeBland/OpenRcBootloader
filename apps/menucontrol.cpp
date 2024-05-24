@@ -493,6 +493,7 @@ uint8_t MState2::check(uint8_t event, uint8_t curr, MenuFuncP *menuTab, uint8_t 
 				}
     break;
     case EVT_KEY_LONG(BOOT_KEY_EXIT):
+				killEvents(event) ;
         s_editMode = false;
         popMenu(true); //return to uppermost, beeps itself
     break;

@@ -11,7 +11,7 @@
 #ifdef PCB9XT
 #define wdt_reset()	(IWDG->KR = 0x0000AAAAL)
 #endif
-#ifdef PCBX12D 
+#if defined(PCBX12D) || defined(PCBX10)
 #define wdt_reset()	(IWDG->KR = 0x0000AAAAL)
 #endif
 
@@ -97,15 +97,15 @@ enum EnumKeys {
 #endif
 #endif
 
-#ifdef PCBX12D
+#if defined(PCBX12D) || defined(PCBX10)
 #define NUM_KEYS 8
 enum EnumKeys {
     KEY_MENU ,
     KEY_EXIT ,
-    KEY_ENTER ,
-    KEY_PAGE ,
-    KEY_PLUS ,
-    KEY_MINUS,
+    KEY_ENTER ,	// DOWN
+    KEY_PAGE ,	// UP
+    KEY_PLUS ,	// RIGHT
+    KEY_MINUS,	// LEFT
 		KEY_TRN,
 	  BTN_RE
 } ;
@@ -114,7 +114,11 @@ enum EnumKeys {
 extern void init_SDcard( void ) ;
 extern unsigned long Master_frequency ;
 
+#if defined(PCBX12D) || defined(PCBX10)
+extern "C" void init_soft_power( void ) ;
+#else
 extern void init_soft_power( void ) ;
+#endif
 extern uint32_t check_soft_power( void ) ;
 extern void soft_power_off( void ) ;
 
@@ -128,7 +132,7 @@ extern void soft_power_off( void ) ;
 #define DISPLAY_CHAR_WIDTH	21
 #endif
 
-#ifdef PCBX12D
+#if defined(PCBX12D) || defined(PCBX10)
 #define BOOT_KEY_UP			KEY_PLUS
 #define BOOT_KEY_DOWN		KEY_MINUS
 #define BOOT_KEY_LEFT		KEY_ENTER
@@ -136,13 +140,10 @@ extern void soft_power_off( void ) ;
 #define BOOT_KEY_MENU		KEY_MENU
 #define BOOT_KEY_EXIT		KEY_EXIT
 
-#define DISPLAY_CHAR_WIDTH	21
-
-#ifdef PCBX12D	
-  #define WIDE_SCREEN	1
+#define DISPLAY_CHAR_WIDTH	33
+#define WIDE_DISPLAY	1
 //  #define SDRAM_BANK_ADDR     ((uint32_t)0xD0000000)
-	#define __SDRAM __attribute__((section(".sdram"), aligned(32)))
-#endif
+#define __SDRAM __attribute__((section(".sdram"), aligned(32)))
 
 #endif
 
@@ -180,6 +181,14 @@ extern void soft_power_off( void ) ;
 #define BOOT_KEY_MENU		KEY_MENU
 #define BOOT_KEY_EXIT		KEY_EXIT
 #else
+#ifdef PCBX9LITE
+#define BOOT_KEY_UP			KEY_PLUS
+#define BOOT_KEY_DOWN		KEY_MINUS
+#define BOOT_KEY_LEFT		KEY_PAGE
+#define BOOT_KEY_RIGHT	KEY_ENTER
+#define BOOT_KEY_MENU		KEY_MENU
+#define BOOT_KEY_EXIT		KEY_EXIT
+#else
 #define BOOT_KEY_UP			KEY_MENU
 #define BOOT_KEY_DOWN		KEY_EXIT
 #define BOOT_KEY_LEFT		KEY_PAGE
@@ -189,7 +198,8 @@ extern void soft_power_off( void ) ;
 #endif
 #endif
 #endif
-#if defined(PCBX7) || defined(PCBXLITE)
+#endif
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 #define DISPLAY_CHAR_WIDTH	21
 #else // PCBX7
 #ifdef REV9E
@@ -211,7 +221,7 @@ template<class t> inline t min(t a, t b){ return a<b?a:b; }
 template<class t> inline t max(t a, t b){ return a>b?a:b; }
 template<class t> inline t limit(t mi, t x, t ma){ return min(max(mi,x),ma); }
 
-#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 extern uint32_t Peri1_frequency ;
 extern uint32_t Peri2_frequency ;
 extern uint32_t Timer_mult1 ;

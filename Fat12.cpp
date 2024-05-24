@@ -820,7 +820,7 @@ int fat12Write( const uint8_t *buffer, uint16_t sector, uint32_t count )
 				{
 					for ( i = 0 ; i < 2 ; i += 1 )
 					{
-						if ( address >= 0x00408000 )		// Protect bootloader
+						if ( address >= 0x00407000 )		// Protect bootloader
 						{
 							program( (uint32_t *)address, (uint32_t *) buffer ) ;	// size is 256 bytes
 						}

@@ -45,13 +45,14 @@
 #include "stm32f2xx.h"
 #endif
 
-#ifndef PCBX12D
+
 #if !defined(SIMU)
-#include "core_cm3.h"
-#endif
-#else
-#include "stm32f4xx.h"
-#include "core_cm4.h"
+ #if defined(PCBX12D) || defined(PCBX10)
+  #include "stm32f4xx.h"
+  #include "core_cm4.h"
+ #else
+  #include "core_cm3.h"
+ #endif
 #endif
 
 #include "integer.h"
@@ -170,7 +171,7 @@ extern uint32_t sd_acmd6( void ) ;
 extern uint32_t sd_acmd51( uint32_t *presult ) ;
 extern uint32_t sd_cmd13( uint32_t *status) ;
 extern void sd_poll_10mS( void ) ;
-#if (defined(PCBX9D) || defined(PCB9XT))
+#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 extern void sdPoll10ms( void ) ;
 extern void sdInit( void ) ;
 #endif

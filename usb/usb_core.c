@@ -320,6 +320,7 @@ USB_OTG_STS USB_OTG_SelectCore(USB_OTG_CORE_HANDLE *pdev,
 * @param  pdev : Selected device
 * @retval USB_OTG_STS : status
 */
+
 USB_OTG_STS USB_OTG_CoreInit(USB_OTG_CORE_HANDLE *pdev)
 {
   USB_OTG_STS status = USB_OTG_OK;

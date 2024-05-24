@@ -35,7 +35,11 @@
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#if defined(PCBX12D) || defined(PCBX10)
+#include "stm32f4xx.h"
+#else
 #include "stm32f2xx.h"
+#endif
 
 /** @addtogroup STM32F2xx_StdPeriph_Driver
   * @{

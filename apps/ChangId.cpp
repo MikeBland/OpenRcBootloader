@@ -143,7 +143,11 @@ const uint8_t Version[] =
    #ifdef PCBXLITE
 	'A', 'P', 'P', 'X', 'L', 'T'
    #else
+    #ifdef PCBX9LITE
+	'A', 'P', 'P', 'X', '3'
+    #else
 	'A', 'P', 'P', 'X', '9', 'D'
+    #endif
    #endif
   #endif
  #endif
@@ -500,7 +504,7 @@ void displayDate( uint8_t y )
 {
 	uint8_t x ;
 #ifdef PCBX9D
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	x = FW*12+4 ;
  #else
 	x = FW*20+4 ;
@@ -947,7 +951,7 @@ void ledBlue()
 
 int main()
 {
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	uint32_t i ;
 #endif
 #ifdef PCB9XT
@@ -1009,7 +1013,7 @@ int main()
 	start_timer0() ;
 #endif
 
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	init_hw_timer()	;
 	__enable_irq() ;
 #ifdef PCBXLITE
@@ -1027,7 +1031,7 @@ extern uint8_t OptrexDisplay ;
 #endif
 	lcd_clear() ;
 #ifdef PCBX9D
- #if defined(PCBX7) || defined(PCBXLITE)
+ #if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	lcd_puts_Pleft( 0, "Change Id" ) ;
  #else
 	lcd_puts_Pleft( 0, "\006Change Id" ) ;
@@ -1045,7 +1049,9 @@ extern uint8_t OptrexDisplay ;
 //	I2C_EE_Init() ;
  #ifndef PCBX7
  #ifndef PCBXLITE
+ #ifndef PCBX9LITE
 	init_hw_timer()	;
+ #endif // PCBX9LITE
  #endif // PCBXLITE
  #endif // PCBX7
 #endif
@@ -1058,7 +1064,9 @@ extern uint8_t OptrexDisplay ;
 
  #ifndef PCBX7
  #ifndef PCBXLITE
+ #ifndef PCBX9LITE
 	__enable_irq() ;
+ #endif // PCBX9LITE
  #endif // PCBXLITE
  #endif // PCBX7
 
@@ -1084,7 +1092,7 @@ extern uint8_t OptrexDisplay ;
 	initWatchdog() ;
 #endif
 
-#if defined(PCBX7) || defined(PCBXLITE)
+#if defined(PCBX7) || defined(PCBXLITE) || defined(PCBX9LITE)
 	i = 40 ;
 	do
 	{
@@ -1109,6 +1117,9 @@ extern uint8_t OptrexDisplay ;
 #ifdef PCBSKY
 	init_rotary_encoder() ;
 //	PIOB->PUER = 0x40 ;
+#endif
+#ifdef PCBX9LITE
+	init_rotary_encoder() ;
 #endif
 	
 
@@ -1164,7 +1175,7 @@ extern uint8_t M64EncoderPosition ;
 #endif	// PCB9XT
 
 //		maintenanceBackground() ;
-#if defined(REV9E) || defined(PCBX7) || defined(PCBSKY) || defined(PCBX12D)
+#if defined(REV9E) || defined(PCBX7) || defined(PCBSKY) || defined(PCBX12D) || defined(PCBX9LITE)
 #ifndef PCBT12
 		checkRotaryEncoder() ;
 #endif
@@ -1275,7 +1286,7 @@ extern uint8_t M64EncoderPosition ;
 		{
 			if ( check_soft_power() == POWER_OFF )
 			{
-#ifdef PCBX7
+#if defined(PCBX7) || defined(PCBX9LITE)
 extern void lcdOff() ;				
 				lcdOff() ;
 #endif // PCBX7

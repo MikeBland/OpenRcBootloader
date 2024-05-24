@@ -66,9 +66,6 @@
 * @}
 */ 
 
-
-
-
 /** @defgroup USBD_CORE_Private_FunctionPrototypes
 * @{
 */ 
